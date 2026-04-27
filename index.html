@@ -450,7 +450,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const ANTHROPIC_API_KEY = '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';
+const ANTHROPIC_API_KEY = ''; // Key is now handled securely on the server
 
 // ── LIVE DATA CONFIG ──────────────────────────────────────────
 const API_BASE = 'https://proscreen-server-production.up.railway.app';
@@ -922,14 +922,30 @@ async function triggerAI(ticker){
 async function runAI(stock){
   const key=stock.ticker+'-'+activeTF;const el=document.getElementById('ai-panel-body');if(!el)return;
   if(aiCache[key]){renderAIResult(aiCache[key],stock);return;}
-  if(ANTHROPIC_API_KEY==='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'){renderAIResult({paragraphs:['Open this file in a text editor, find const ANTHROPIC_API_KEY, and replace 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 with your key from console.anthropic.com.','All other features — charts, predictions, portfolio, alerts — work without an API key.','The alert system including browser notifications, email, and SMS works independently of the AI key.'],scores:{value:50,growth:50,risk:50,income:50,momentum:50},verdict:'Add your Anthropic API key to enable live AI analysis.'},stock);return;}
   const p=predict(stock,TF[activeTF].pred);
-  const prompt=`Analyze ${stock.ticker} (${stock.name}). Data: Sector: ${stock.sector} | Price: $${stock.price} | P/E: ${stock.pe<0?'negative':stock.pe} | EPS: $${stock.eps} | ROE: ${stock.roe}% | Rev growth: ${stock.revGrowth}% | Debt/Eq: ${stock.debtEq}x | Div: ${stock.divYield}% | Beta: ${stock.beta} | 52W: $${stock.week52Low}–$${stock.week52High} | Vol: ${stock.volumeM}M | Target: $${p.base} (${((p.base-stock.price)/stock.price*100).toFixed(1)}%) | Sentiment: ${p.sentiment}\n\nRespond ONLY with valid JSON no markdown:\n{"paragraphs":["Business model (2-3 sentences)","Strengths and risks from metrics (2-3 sentences)","Outlook for ${TF[activeTF].label} (2-3 sentences)"],"scores":{"value":<0-100>,"growth":<0-100>,"risk":<0-100>,"income":<0-100>,"momentum":<0-100>},"verdict":"One bold verdict."}`;
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
-    const data=await resp.json();let text=(data.content||[]).map(b=>b.text||'').join('').trim().replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(text);aiCache[key]=parsed;renderAIResult(parsed,stock);
-  }catch(e){if(el)el.innerHTML=`<p style="color:var(--text3);padding:12px 0;">Analysis unavailable. Check API key. ${e.message}</p>`;}
+    // AI key is stored securely on the server — never exposed in this file
+    const resp=await fetch(`${API_BASE}/api/analyze`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        ticker:stock.ticker,name:stock.name,sector:stock.sector,
+        price:stock.price,pe:stock.pe,eps:stock.eps,roe:stock.roe,
+        divYield:stock.divYield,beta:stock.beta,revGrowth:stock.revGrowth,
+        debtEq:stock.debtEq,week52High:stock.week52High,week52Low:stock.week52Low,
+        volumeM:stock.volumeM,momentum:stock.momentum,
+        timeframe:TF[activeTF].label,
+        predBase:p.base,predBull:p.bull,predBear:p.bear,
+        predConf:p.conf,sentiment:p.sentiment
+      })
+    });
+    if(!resp.ok)throw new Error('Server error '+resp.status);
+    const parsed=await resp.json();
+    if(parsed.error)throw new Error(parsed.error);
+    aiCache[key]=parsed;renderAIResult(parsed,stock);
+  }catch(e){
+    if(el)el.innerHTML=`<p style="color:var(--text3);padding:12px 0;">AI analysis unavailable. Make sure ANTHROPIC_API_KEY is added to your Railway Variables tab. Error: ${e.message}</p>`;
+  }
 }
 function renderAIResult(data,stock){
   lastAIText=`AI Analysis: ${stock.ticker} — ${stock.name}\n${TF[activeTF].label} timeframe\n\n${data.paragraphs.join('\n\n')}\n\nVerdict: ${data.verdict}`;
