@@ -450,7 +450,49 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const ANTHROPIC_API_KEY = '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';
+const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+
+// ── LIVE DATA CONFIG ──────────────────────────────────────────
+const API_BASE = 'https://proscreen-server-production.up.railway.app';
+const DEFAULT_TICKERS = [
+  'AAPL','MSFT','NVDA','JPM','JNJ','XOM','WMT','PG','BAC','AMZN',
+  'NEE','CAT','UNH','META','GS','TSLA','MRK','CVX','INTC','SO',
+  'V','MA','KO','DIS','NFLX','AMD','PYPL','SBUX','HON','PFE',
+];
+
+async function loadLiveData() {
+  const banner = document.createElement('div');
+  banner.id = 'live-banner';
+  banner.style.cssText = 'padding:7px 24px;font-size:11px;background:#2e2510;color:#e8b84b;border-bottom:1px solid #363630;display:flex;align-items:center;gap:8px;';
+  banner.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#e8b84b;"></div>Loading live market data...';
+  const topbar = document.querySelector('.topbar');
+  if (topbar) topbar.after(banner);
+  try {
+    const res = await fetch(`${API_BASE}/api/screener?tickers=${DEFAULT_TICKERS.join(',')}`);
+    if (!res.ok) throw new Error('Server error ' + res.status);
+    const liveStocks = await res.json();
+    if (!liveStocks.length) throw new Error('No data');
+    ALL_STOCKS.length = 0;
+    liveStocks.forEach(s => ALL_STOCKS.push(s));
+    applyFilters();
+    banner.style.background = '#0d2e20';
+    banner.style.color = '#1fad7a';
+    banner.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#1fad7a;"></div>✓ Live data loaded — ' + liveStocks.length + ' stocks · ' + new Date().toLocaleTimeString();
+    setTimeout(() => { if(banner) banner.style.display = 'none'; }, 4000);
+    setInterval(async () => {
+      try {
+        const r = await fetch(`${API_BASE}/api/screener?tickers=${ALL_STOCKS.map(s=>s.ticker).join(',')}`);
+        const fresh = await r.json();
+        fresh.forEach(u => { const e = ALL_STOCKS.find(s=>s.ticker===u.ticker); if(e){e.price=u.price;e.change=u.change;e.volumeM=u.volumeM;} });
+        applyFilters();
+      } catch(e) {}
+    }, 5 * 60 * 1000);
+  } catch (e) {
+    banner.style.background = '#2e1a0d';
+    banner.style.color = '#f97316';
+    banner.innerHTML = '<div style="width:8px;height:8px;border-radius:50%;background:#f97316;"></div>⚠ Live data unavailable — showing sample data (' + e.message + ')';
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // STOCK DATA
@@ -880,7 +922,7 @@ async function triggerAI(ticker){
 async function runAI(stock){
   const key=stock.ticker+'-'+activeTF;const el=document.getElementById('ai-panel-body');if(!el)return;
   if(aiCache[key]){renderAIResult(aiCache[key],stock);return;}
-  if(ANTHROPIC_API_KEY==='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'){renderAIResult({paragraphs:['Open this file in a text editor, find const ANTHROPIC_API_KEY, and replace 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 with your key from console.anthropic.com.','All other features — charts, predictions, portfolio, alerts — work without an API key.','The alert system including browser notifications, email, and SMS works independently of the AI key.'],scores:{value:50,growth:50,risk:50,income:50,momentum:50},verdict:'Add your Anthropic API key to enable live AI analysis.'},stock);return;}
+  if(ANTHROPIC_API_KEY==='YOUR_API_KEY_HERE'){renderAIResult({paragraphs:['Open this file in a text editor, find const ANTHROPIC_API_KEY, and replace YOUR_API_KEY_HERE with your key from console.anthropic.com.','All other features — charts, predictions, portfolio, alerts — work without an API key.','The alert system including browser notifications, email, and SMS works independently of the AI key.'],scores:{value:50,growth:50,risk:50,income:50,momentum:50},verdict:'Add your Anthropic API key to enable live AI analysis.'},stock);return;}
   const p=predict(stock,TF[activeTF].pred);
   const prompt=`Analyze ${stock.ticker} (${stock.name}). Data: Sector: ${stock.sector} | Price: $${stock.price} | P/E: ${stock.pe<0?'negative':stock.pe} | EPS: $${stock.eps} | ROE: ${stock.roe}% | Rev growth: ${stock.revGrowth}% | Debt/Eq: ${stock.debtEq}x | Div: ${stock.divYield}% | Beta: ${stock.beta} | 52W: $${stock.week52Low}–$${stock.week52High} | Vol: ${stock.volumeM}M | Target: $${p.base} (${((p.base-stock.price)/stock.price*100).toFixed(1)}%) | Sentiment: ${p.sentiment}\n\nRespond ONLY with valid JSON no markdown:\n{"paragraphs":["Business model (2-3 sentences)","Strengths and risks from metrics (2-3 sentences)","Outlook for ${TF[activeTF].label} (2-3 sentences)"],"scores":{"value":<0-100>,"growth":<0-100>,"risk":<0-100>,"income":<0-100>,"momentum":<0-100>},"verdict":"One bold verdict."}`;
   try{
@@ -944,7 +986,7 @@ function exportPDF(){const rows=filtered.map(s=>`<tr><td><b>${s.ticker}</b></td>
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-document.querySelectorAll('.tbtn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeTF=btn.dataset.tf;openChart=null;applyFilters();if(compareList.length>=2)renderCompare();});}
+document.querySelectorAll('.tbtn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeTF=btn.dataset.tf;openChart=null;applyFilters();if(compareList.length>=2)renderCompare();});});
 ['f-sector','f-mcap','f-pe','f-div','f-change','f-vol'].forEach(id=>{document.getElementById(id).addEventListener('change',applyFilters);});
 // Init method toggles
 document.getElementById('toggle-browser').classList.add('active');
