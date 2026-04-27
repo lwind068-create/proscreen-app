@@ -450,7 +450,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 // ═══════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════
-const ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+const ANTHROPIC_API_KEY = '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';
 
 // ── LIVE DATA CONFIG ──────────────────────────────────────────
 const API_BASE = 'https://proscreen-server-production.up.railway.app';
@@ -922,7 +922,7 @@ async function triggerAI(ticker){
 async function runAI(stock){
   const key=stock.ticker+'-'+activeTF;const el=document.getElementById('ai-panel-body');if(!el)return;
   if(aiCache[key]){renderAIResult(aiCache[key],stock);return;}
-  if(ANTHROPIC_API_KEY==='YOUR_API_KEY_HERE'){renderAIResult({paragraphs:['Open this file in a text editor, find const ANTHROPIC_API_KEY, and replace YOUR_API_KEY_HERE with your key from console.anthropic.com.','All other features — charts, predictions, portfolio, alerts — work without an API key.','The alert system including browser notifications, email, and SMS works independently of the AI key.'],scores:{value:50,growth:50,risk:50,income:50,momentum:50},verdict:'Add your Anthropic API key to enable live AI analysis.'},stock);return;}
+  if(ANTHROPIC_API_KEY==='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'){renderAIResult({paragraphs:['Open this file in a text editor, find const ANTHROPIC_API_KEY, and replace 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 with your key from console.anthropic.com.','All other features — charts, predictions, portfolio, alerts — work without an API key.','The alert system including browser notifications, email, and SMS works independently of the AI key.'],scores:{value:50,growth:50,risk:50,income:50,momentum:50},verdict:'Add your Anthropic API key to enable live AI analysis.'},stock);return;}
   const p=predict(stock,TF[activeTF].pred);
   const prompt=`Analyze ${stock.ticker} (${stock.name}). Data: Sector: ${stock.sector} | Price: $${stock.price} | P/E: ${stock.pe<0?'negative':stock.pe} | EPS: $${stock.eps} | ROE: ${stock.roe}% | Rev growth: ${stock.revGrowth}% | Debt/Eq: ${stock.debtEq}x | Div: ${stock.divYield}% | Beta: ${stock.beta} | 52W: $${stock.week52Low}–$${stock.week52High} | Vol: ${stock.volumeM}M | Target: $${p.base} (${((p.base-stock.price)/stock.price*100).toFixed(1)}%) | Sentiment: ${p.sentiment}\n\nRespond ONLY with valid JSON no markdown:\n{"paragraphs":["Business model (2-3 sentences)","Strengths and risks from metrics (2-3 sentences)","Outlook for ${TF[activeTF].label} (2-3 sentences)"],"scores":{"value":<0-100>,"growth":<0-100>,"risk":<0-100>,"income":<0-100>,"momentum":<0-100>},"verdict":"One bold verdict."}`;
   try{
