@@ -456,9 +456,10 @@ const ANTHROPIC_API_KEY = ''; // Key is now handled securely on the server
 
 // ── LIVE DATA CONFIG ──────────────────────────────────────────
 const API_BASE = 'https://proscreen-server-production.up.railway.app';
-const DEFAULT_TICKERS = [
-  'AAPL','MSFT','NVDA','TSLA','PYPL',
-];
+const DEFAULT_TICKERS = ['AAPL','MSFT','NVDA','JPM','JNJ','XOM','WMT','PG','BAC','AMZN',
+  'NEE','CAT','UNH','META','GS','TSLA','MRK','CVX','INTC','SO',
+  'V','MA','KO','DIS','NFLX','AMD','PYPL','SBUX','HON','PFE',
+  ];
 
 async function loadLiveData() {
   const banner = document.createElement('div');
