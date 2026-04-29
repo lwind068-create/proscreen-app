@@ -79,7 +79,7 @@ select:focus,input:focus{border-color:var(--gold);}
 .tbl-wrap::-webkit-scrollbar{height:4px;}
 .tbl-wrap::-webkit-scrollbar-track{background:var(--bg3);border-radius:2px;}
 .tbl-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:1200px;}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;min-width:1350px;}
 thead th{text-align:left;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;padding:7px 8px;border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;}
 thead th:hover{color:var(--text2);}
 tbody tr.stock-row{border-bottom:1px solid var(--border);transition:background .1s;}
@@ -337,6 +337,16 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
         <span style="font-size:12px;color:var(--text3);" id="count">30 stocks</span>
         <button onclick="resetFilters()">Reset filters</button>
       </div>
+      <div id="ai-hint-banner" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--purple-bg);border:1px solid var(--purple);border-radius:var(--r);margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:16px;">✦</span>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--purple);">New: AI Analysis on every stock</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px;">Click the purple <strong style="color:var(--purple);">✦ AI</strong> button on any stock row to get an instant AI-powered analysis, price scorecard, and investment verdict.</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('ai-hint-banner').style.display='none';localStorage.setItem('ai-hint-dismissed','1');" style="font-size:11px;padding:3px 10px;flex-shrink:0;">Got it</button>
+      </div>
       <div class="tbl-wrap">
         <table>
           <thead><tr>
@@ -354,7 +364,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
             <th onclick="sortBy('debtEq')" style="width:50px" class="has-tip" data-tip="Debt-to-Equity — How much debt vs shareholder equity. Lower=safer. Above 2x can signal financial risk.">D/E<span class="tip-badge">?</span></th>
             <th style="width:85px" class="has-tip" data-tip="52-Week High/Low — Highest and lowest price over past year. Shows price range context.">52W H/L<span class="tip-badge">?</span></th>
             <th style="width:85px" class="has-tip" data-tip="Sparkline — Mini price chart showing trend over your selected timeframe. Green=uptrend, Red=downtrend.">Trend<span class="tip-badge">?</span></th>
-            <th style="width:110px">Actions</th>
+            <th style="width:150px;min-width:150px">Actions</th>
           </tr></thead>
           <tbody id="results"></tbody>
         </table>
@@ -788,11 +798,13 @@ function renderTable(){
       <td style="padding:6px 8px;">${settings.sparklines?`<div class="sparkline-wrap"><canvas id="${sparkId}" role="img" aria-label="Price trend ${s.ticker}" style="display:block;"></canvas></div>`:'—'}</td>
       <td>
         <div style="display:flex;gap:3px;">
-          <button style="font-size:10px;padding:2px 6px;" onclick="toggleChart('${s.ticker}')">Chart</button>
-          <button style="font-size:10px;padding:2px 6px;background:${isW?'var(--green-bg)':'transparent'};color:${isW?'var(--green)':'var(--text3)'};" onclick="toggleWatch('${s.ticker}')">${isW?'★':'☆'}</button>
-          <button style="font-size:10px;padding:2px 6px;background:${isAI?'var(--purple)':'var(--purple-bg)'};color:${isAI?'#0f0f0d':'var(--purple)'};border-color:var(--purple);" onclick="triggerAI('${s.ticker}')">✦</button>
-          <button style="font-size:10px;padding:2px 6px;background:var(--orange-bg);color:var(--orange);border-color:var(--orange);" onclick="quickAlert('${s.ticker}')">🔔</button>
-          <button style="font-size:10px;padding:2px 5px;" onclick="addNote('${s.ticker}')" title="Add note">📝</button>
+          <div style="display:flex;gap:2px;flex-wrap:nowrap;">
+            <button style="font-size:10px;padding:2px 7px;" onclick="toggleChart('${s.ticker}')">Chart</button>
+            <button style="font-size:10px;padding:2px 6px;background:${isW?'var(--green-bg)':'transparent'};color:${isW?'var(--green)':'var(--text3)'};" onclick="toggleWatch('${s.ticker}')">${isW?'★':'☆'}</button>
+            <button style="font-size:10px;padding:2px 8px;background:${isAI?'var(--purple)':'var(--purple-bg)'};color:${isAI?'#0f0f0d':'var(--purple)'};border-color:var(--purple);font-weight:500;" onclick="triggerAI('${s.ticker}')" class="has-tip" data-tip="AI Analysis — click for an instant AI-powered breakdown, price scorecard, and investment verdict for this stock.">✦ AI</button>
+            <button style="font-size:10px;padding:2px 6px;background:var(--orange-bg);color:var(--orange);border-color:var(--orange);" onclick="quickAlert('${s.ticker}')">🔔</button>
+            <button style="font-size:10px;padding:2px 5px;" onclick="addNote('${s.ticker}')" title="Add note">📝</button>
+          </div>
         </div>
       </td>
     </tr>`;
@@ -1519,6 +1531,13 @@ function showTab(tab,el){
 applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();
 initNotifications();
 loadLiveData();
+
+// Check if AI hint was already dismissed
+if(localStorage.getItem('ai-hint-dismissed')){
+  const banner = document.getElementById('ai-hint-banner');
+  if(banner) banner.style.display='none';
+}
+
 setInterval(()=>{if(alerts.filter(a=>!a.triggered&&!a.dismissed).length>0)runAlertCheck();},30000);
 </script>
 </body>
