@@ -245,6 +245,17 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 .toast-close{cursor:pointer;color:var(--text3);border:none;background:none;font-size:16px;line-height:1;padding:0;flex-shrink:0;}
 @keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
 .copy-btn{background:var(--purple-bg)!important;color:var(--purple)!important;border-color:var(--purple)!important;}
+/* CLIENT PORTFOLIOS */
+.client-selector{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.client-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:99px;font-size:12px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;}
+.client-chip:hover{border-color:var(--gold);color:var(--gold);}
+.client-chip.active{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:500;}
+.client-chip-remove{cursor:pointer;color:var(--text3);border:none;background:none;font-size:14px;line-height:1;padding:0;margin-left:2px;}
+.client-chip-remove:hover{color:var(--red);}
+.client-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.client-name-badge{font-family:var(--font-display);font-size:20px;color:var(--text);}
+.client-meta{font-size:11px;color:var(--text3);margin-top:2px;}
+
 /* AI CHAT */
 .chat-msg{display:flex;flex-direction:column;max-width:85%;}
 .chat-msg.user{align-self:flex-end;align-items:flex-end;}
@@ -396,22 +407,68 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 
     <!-- PORTFOLIO -->
     <div class="tab-pane" id="tab-portfolio">
-      <div class="port-summary">
-        <div class="summary-card"><div class="summary-label">Total value</div><div class="summary-val" id="port-total">$0</div><div class="summary-sub">all holdings</div></div>
-        <div class="summary-card"><div class="summary-label">Gain/Loss</div><div class="summary-val" id="port-gl">$0</div><div class="summary-sub" id="port-gl-pct">0.00%</div></div>
-        <div class="summary-card"><div class="summary-label">Best performer</div><div class="summary-val" id="port-best" style="font-size:16px;">—</div><div class="summary-sub" id="port-best-sub">—</div></div>
-        <div class="summary-card"><div class="summary-label">Holdings</div><div class="summary-val" id="port-count">0</div><div class="summary-sub">positions</div></div>
+
+      <!-- Client selector bar -->
+      <div class="client-selector">
+        <span class="lbl" style="line-height:32px;margin-right:4px;">Client:</span>
+        <div id="client-chips"></div>
+        <button onclick="showAddClientModal()" class="primary" style="padding:5px 14px;font-size:11px;">+ New client</button>
       </div>
-      <div class="card">
-        <div class="card-title">Add holding</div>
-        <div class="add-holding">
-          <div class="fl"><label class="lbl">Ticker</label><input id="p-ticker" type="text" placeholder="AAPL" style="text-transform:uppercase;"/></div>
-          <div class="fl"><label class="lbl">Shares</label><input id="p-shares" type="number" placeholder="10" min="0.01" step="0.01"/></div>
-          <div class="fl"><label class="lbl">Avg cost</label><input id="p-cost" type="number" placeholder="150.00" min="0.01" step="0.01"/></div>
-          <button class="primary" onclick="addHolding()" style="height:34px;align-self:flex-end;flex-shrink:0;">Add</button>
+
+      <!-- Add client modal -->
+      <div id="add-client-modal" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px;">
+        <div class="card-title">Add new client</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:flex-end;">
+          <div class="fl"><label class="lbl">Client name</label><input id="new-client-name" type="text" placeholder="John Smith"/></div>
+          <div class="fl"><label class="lbl">Account type</label><select id="new-client-type"><option>Individual</option><option>Joint</option><option>IRA</option><option>Roth IRA</option><option>Trust</option><option>Corporate</option></select></div>
+          <div class="fl"><label class="lbl">Risk profile</label><select id="new-client-risk"><option>Conservative</option><option>Moderate</option><option>Aggressive</option></select></div>
+          <div style="display:flex;gap:6px;">
+            <button class="primary" onclick="addClient()" style="height:34px;">Add</button>
+            <button onclick="document.getElementById('add-client-modal').style.display='none'" style="height:34px;">Cancel</button>
+          </div>
         </div>
       </div>
-      <div id="port-holdings"></div>
+
+      <!-- No client selected -->
+      <div id="no-client-msg" class="empty" style="padding:3rem;">Select a client above or create a new one to get started</div>
+
+      <!-- Client portfolio view -->
+      <div id="client-portfolio-view" style="display:none;">
+
+        <!-- Client header -->
+        <div class="client-header">
+          <div>
+            <div class="client-name-badge" id="client-name-display">—</div>
+            <div class="client-meta" id="client-meta-display">—</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="exportClientPortfolioReport()" style="background:var(--gold-bg);color:var(--gold);border-color:var(--gold);font-size:11px;">↓ Client Report</button>
+            <button onclick="deleteCurrentClient()" style="background:var(--red-bg);color:var(--red);border-color:var(--red);font-size:11px;">Delete client</button>
+          </div>
+        </div>
+
+        <!-- Summary cards -->
+        <div class="port-summary">
+          <div class="summary-card"><div class="summary-label">Total value</div><div class="summary-val" id="port-total">$0</div><div class="summary-sub">all holdings</div></div>
+          <div class="summary-card"><div class="summary-label">Gain/Loss</div><div class="summary-val" id="port-gl">$0</div><div class="summary-sub" id="port-gl-pct">0.00%</div></div>
+          <div class="summary-card"><div class="summary-label">Best performer</div><div class="summary-val" id="port-best" style="font-size:16px;">—</div><div class="summary-sub" id="port-best-sub">—</div></div>
+          <div class="summary-card"><div class="summary-label">Holdings</div><div class="summary-val" id="port-count">0</div><div class="summary-sub">positions</div></div>
+        </div>
+
+        <!-- Add holding -->
+        <div class="card">
+          <div class="card-title">Add holding</div>
+          <div class="add-holding">
+            <div class="fl"><label class="lbl">Ticker</label><input id="p-ticker" type="text" placeholder="AAPL" style="text-transform:uppercase;"/></div>
+            <div class="fl"><label class="lbl">Shares</label><input id="p-shares" type="number" placeholder="10" min="0.01" step="0.01"/></div>
+            <div class="fl"><label class="lbl">Avg cost</label><input id="p-cost" type="number" placeholder="150.00" min="0.01" step="0.01"/></div>
+            <div class="fl"><label class="lbl">Notes</label><input id="p-notes" type="text" placeholder="Optional note..."/></div>
+            <button class="primary" onclick="addHolding()" style="height:34px;align-self:flex-end;flex-shrink:0;">Add</button>
+          </div>
+        </div>
+
+        <div id="port-holdings"></div>
+      </div>
     </div>
 
     <!-- COMPARE -->
@@ -659,6 +716,9 @@ const TF={'1W':{pts:7,label:'7 days',pred:7,mult:5},'1M':{pts:30,label:'30 days'
 let activeTF='1M',sortKey=null,sortDir=1,filtered=[...ALL_STOCKS];
 let openChart=null,currentAIStock=null,lastAIText='';
 let watchlist=[],portfolio=[],alerts=[],compareList=[],alertIntervals={};
+// CLIENT PORTFOLIOS
+let clients = []; // [{id, name, type, risk, holdings:[{ticker,shares,avgCost,notes}]}]
+let activeClientId = null;
 let notifPermission='default',lastCheckTime=null;
 let activeCompareChart='line';
 const charts={},aiCache={},sparkCache={};
@@ -1152,9 +1212,88 @@ function checkWatchlistAlerts(){
 // ═══════════════════════════════════════════════════
 // PORTFOLIO
 // ═══════════════════════════════════════════════════
-function addHolding(){const ticker=document.getElementById('p-ticker').value.trim().toUpperCase();const shares=parseFloat(document.getElementById('p-shares').value);const cost=parseFloat(document.getElementById('p-cost').value);const stock=ALL_STOCKS.find(s=>s.ticker===ticker);if(!stock){alert('Ticker not found: '+ticker);return;}if(!shares||shares<=0||!cost||cost<=0){alert('Enter valid shares and cost.');return;}const ei=portfolio.findIndex(h=>h.ticker===ticker);if(ei>=0)portfolio[ei]={ticker,shares,avgCost:cost};else portfolio.push({ticker,shares,avgCost:cost});document.getElementById('p-ticker').value='';document.getElementById('p-shares').value='';document.getElementById('p-cost').value='';renderPortfolio();}
-function removeHolding(ticker){portfolio=portfolio.filter(h=>h.ticker!==ticker);renderPortfolio();}
-function renderPortfolio(){if(!portfolio.length){document.getElementById('port-holdings').innerHTML='<div class="empty">No holdings yet.</div>';['port-total','port-gl','port-best','port-count'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=id==='port-count'?'0':'$0';});document.getElementById('port-gl-pct').textContent='0.00%';document.getElementById('port-best-sub').textContent='—';return;}let totalVal=0,totalCost=0,bestT='',bestP=-Infinity;const rows=portfolio.map(h=>{const s=ALL_STOCKS.find(x=>x.ticker===h.ticker);if(!s)return'';const val=s.price*h.shares,cost=h.avgCost*h.shares,gl=val-cost,glP=(gl/cost)*100;totalVal+=val;totalCost+=cost;if(glP>bestP){bestP=glP;bestT=h.ticker;}return`<div style="display:grid;grid-template-columns:70px 1fr 80px 90px 90px 90px 90px 50px;gap:8px;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;"><span class="tick">${h.ticker}</span><span style="color:var(--text2);font-size:12px;">${s.name}</span><span style="font-family:var(--font-mono);color:var(--text2)">${h.shares}x</span><span style="font-family:var(--font-mono);color:var(--text3)">@$${h.avgCost.toFixed(2)}</span><span style="font-family:var(--font-mono)">$${val.toFixed(0)}</span><span style="font-family:var(--font-mono);color:${gl>=0?'var(--green)':'var(--red)'}">${gl>=0?'+':''}$${Math.abs(gl).toFixed(0)}</span><span style="font-family:var(--font-mono);color:${glP>=0?'var(--green)':'var(--red)'}">${pct(glP)}</span><button style="font-size:10px;padding:2px 6px;" onclick="removeHolding('${h.ticker}')">×</button></div>`;});document.getElementById('port-holdings').innerHTML=`<div style="display:grid;grid-template-columns:70px 1fr 80px 90px 90px 90px 90px 50px;gap:8px;padding:6px 14px;margin-bottom:4px;">${['Ticker','Company','Shares','Avg cost','Value','Gain/Loss','Return',''].map(h=>`<span class="lbl">${h}</span>`).join('')}</div>${rows.join('')}`;const tGL=totalVal-totalCost,tGLP=(tGL/totalCost)*100;document.getElementById('port-total').textContent='$'+totalVal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl').style.color=tGL>=0?'var(--green)':'var(--red)';document.getElementById('port-gl').textContent=(tGL>=0?'+$':'-$')+Math.abs(tGL).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl-pct').textContent=pct(tGLP);document.getElementById('port-count').textContent=portfolio.length;document.getElementById('port-best').textContent=bestT||'—';document.getElementById('port-best-sub').textContent=bestP>-Infinity?pct(bestP):'—';}
+// ── CLIENT MANAGEMENT ──────────────────────────────────────────
+function showAddClientModal(){document.getElementById('add-client-modal').style.display='block';document.getElementById('new-client-name').focus();}
+
+function addClient(){
+  const name=document.getElementById('new-client-name').value.trim();
+  if(!name){alert('Enter a client name.');return;}
+  const type=document.getElementById('new-client-type').value;
+  const risk=document.getElementById('new-client-risk').value;
+  const client={id:Date.now().toString(),name,type,risk,holdings:[],createdAt:new Date().toISOString()};
+  clients.push(client);
+  document.getElementById('new-client-name').value='';
+  document.getElementById('add-client-modal').style.display='none';
+  renderClientChips();
+  selectClient(client.id);
+  showToast('Client added','Portfolio created for '+name,'success');
+}
+
+function selectClient(id){
+  activeClientId=id;
+  const client=clients.find(c=>c.id===id);
+  if(!client)return;
+  portfolio=client.holdings;
+  document.getElementById('no-client-msg').style.display='none';
+  document.getElementById('client-portfolio-view').style.display='block';
+  document.getElementById('client-name-display').textContent=client.name;
+  document.getElementById('client-meta-display').textContent=client.type+' · '+client.risk+' · Created '+new Date(client.createdAt).toLocaleDateString();
+  renderClientChips();
+  renderPortfolio();
+}
+
+function deleteCurrentClient(){
+  if(!activeClientId)return;
+  const client=clients.find(c=>c.id===activeClientId);
+  if(!client)return;
+  if(!confirm('Delete portfolio for '+client.name+'? This cannot be undone.'))return;
+  clients=clients.filter(c=>c.id!==activeClientId);
+  activeClientId=null;
+  portfolio=[];
+  document.getElementById('no-client-msg').style.display='block';
+  document.getElementById('client-portfolio-view').style.display='none';
+  renderClientChips();
+  showToast('Client deleted','Portfolio removed','info');
+}
+
+function renderClientChips(){
+  const container=document.getElementById('client-chips');
+  if(!clients.length){container.innerHTML='';return;}
+  container.innerHTML=clients.map(c=>{
+    const isActive=c.id===activeClientId;
+    const totalVal=c.holdings.reduce((sum,h)=>{const s=ALL_STOCKS.find(x=>x.ticker===h.ticker);return sum+(s?s.price*h.shares:0);},0);
+    return`<div class="client-chip ${isActive?'active':''}" onclick="selectClient('${c.id}')">
+      <span>${c.name}</span>
+      <span style="font-size:10px;opacity:.7;">${totalVal>0?'$'+(totalVal/1000).toFixed(0)+'k':'empty'}</span>
+      ${isActive?`<button class="client-chip-remove" onclick="event.stopPropagation();deleteCurrentClient()">×</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function addHolding(){
+  if(!activeClientId){alert('Select or create a client first.');return;}
+  const ticker=document.getElementById('p-ticker').value.trim().toUpperCase();
+  const shares=parseFloat(document.getElementById('p-shares').value);
+  const cost=parseFloat(document.getElementById('p-cost').value);
+  const notes=document.getElementById('p-notes').value.trim();
+  const stock=ALL_STOCKS.find(s=>s.ticker===ticker);
+  if(!stock){alert('Ticker not found: '+ticker);return;}
+  if(!shares||shares<=0||!cost||cost<=0){alert('Enter valid shares and cost.');return;}
+  const client=clients.find(c=>c.id===activeClientId);
+  if(!client)return;
+  const ei=client.holdings.findIndex(h=>h.ticker===ticker);
+  if(ei>=0)client.holdings[ei]={ticker,shares,avgCost:cost,notes};
+  else client.holdings.push({ticker,shares,avgCost:cost,notes});
+  portfolio=client.holdings;
+  document.getElementById('p-ticker').value='';
+  document.getElementById('p-shares').value='';
+  document.getElementById('p-cost').value='';
+  document.getElementById('p-notes').value='';
+  renderPortfolio();
+  renderClientChips();
+}
+function removeHolding(ticker){if(activeClientId){const c=clients.find(x=>x.id===activeClientId);if(c)c.holdings=c.holdings.filter(h=>h.ticker!==ticker);portfolio=c?c.holdings:[];}else{portfolio=portfolio.filter(h=>h.ticker!==ticker);}renderPortfolio();renderClientChips();}
+function renderPortfolio(){if(!portfolio.length){document.getElementById('port-holdings').innerHTML='<div class="empty">No holdings yet.</div>';['port-total','port-gl','port-best','port-count'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=id==='port-count'?'0':'$0';});document.getElementById('port-gl-pct').textContent='0.00%';document.getElementById('port-best-sub').textContent='—';return;}let totalVal=0,totalCost=0,bestT='',bestP=-Infinity;const rows=portfolio.map(h=>{const s=ALL_STOCKS.find(x=>x.ticker===h.ticker);if(!s)return'';const val=s.price*h.shares,cost=h.avgCost*h.shares,gl=val-cost,glP=(gl/cost)*100;totalVal+=val;totalCost+=cost;if(glP>bestP){bestP=glP;bestT=h.ticker;}return`<div style="display:grid;grid-template-columns:65px 1fr 70px 80px 85px 85px 80px 1fr 45px;gap:8px;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;"><span class="tick">${h.ticker}</span><span style="color:var(--text2);font-size:12px;">${s.name}</span><span style="font-family:var(--font-mono);color:var(--text2)">${h.shares}x</span><span style="font-family:var(--font-mono);color:var(--text3)">@$${h.avgCost.toFixed(2)}</span><span style="font-family:var(--font-mono)">$${val.toFixed(0)}</span><span style="font-family:var(--font-mono);color:${gl>=0?'var(--green)':'var(--red)'}">${gl>=0?'+':''}$${Math.abs(gl).toFixed(0)}</span><span style="font-family:var(--font-mono);color:${glP>=0?'var(--green)':'var(--red)'}">${pct(glP)}</span><span style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.notes||'—'}</span><button style="font-size:10px;padding:2px 6px;" onclick="removeHolding('${h.ticker}')">×</button></div>`;});document.getElementById('port-holdings').innerHTML=`<div style="display:grid;grid-template-columns:65px 1fr 70px 80px 85px 85px 80px 1fr 45px;gap:8px;padding:6px 14px;margin-bottom:4px;">${['Ticker','Company','Shares','Avg cost','Value','Gain/Loss','Return','Notes',''].map(h=>`<span class="lbl">${h}</span>`).join('')}</div>${rows.join('')}`;const tGL=totalVal-totalCost,tGLP=(tGL/totalCost)*100;document.getElementById('port-total').textContent='$'+totalVal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl').style.color=tGL>=0?'var(--green)':'var(--red)';document.getElementById('port-gl').textContent=(tGL>=0?'+$':'-$')+Math.abs(tGL).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl-pct').textContent=pct(tGLP);document.getElementById('port-count').textContent=portfolio.length;document.getElementById('port-best').textContent=bestT||'—';document.getElementById('port-best-sub').textContent=bestP>-Infinity?pct(bestP):'—';}
 
 // ═══════════════════════════════════════════════════
 // COMPARE — with multiple chart types
@@ -1284,6 +1423,85 @@ function renderAlerts(){const active=alerts.filter(a=>!a.dismissed);document.get
 // ═══════════════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════════════
+
+function exportClientPortfolioReport(){
+  if(!activeClientId){alert('Select a client first.');return;}
+  const client=clients.find(c=>c.id===activeClientId);
+  if(!client||!client.holdings.length){alert('No holdings to report.');return;}
+  const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  let totalVal=0,totalCost=0,winners=0,losers=0;
+  const holdingData=client.holdings.map(h=>{
+    const s=ALL_STOCKS.find(x=>x.ticker===h.ticker);if(!s)return null;
+    const val=s.price*h.shares,cost=h.avgCost*h.shares,gl=val-cost,glP=(gl/cost)*100;
+    totalVal+=val;totalCost+=cost;
+    if(gl>=0)winners++;else losers++;
+    const p=predict(s,TF[activeTF].pred);
+    const upside=((p.base-s.price)/s.price*100).toFixed(1);
+    const aiData=aiCache[s.ticker+'-'+activeTF];
+    return{s,h,val,cost,gl,glP,p,upside,aiData,pctOfPort:0};
+  }).filter(Boolean);
+  holdingData.forEach(d=>d.pctOfPort=((d.val/totalVal)*100).toFixed(1));
+  holdingData.sort((a,b)=>b.val-a.val);
+  const tGL=totalVal-totalCost,tGLP=totalCost>0?(tGL/totalCost)*100:0;
+  const bestHolder=holdingData.reduce((best,d)=>d.glP>best.glP?d:best,holdingData[0]);
+  const worstHolder=holdingData.reduce((worst,d)=>d.glP<worst.glP?d:worst,holdingData[0]);
+  const biggestPos=holdingData[0];
+  const highRisk=holdingData.filter(d=>d.s.beta>1.5);
+  const highDiv=holdingData.filter(d=>d.s.divYield>3);
+  const concentrated=holdingData.filter(d=>parseFloat(d.pctOfPort)>25);
+  const sectorMap={};
+  holdingData.forEach(d=>{const sec=d.s.sector||'Other';if(!sectorMap[sec])sectorMap[sec]={val:0,count:0};sectorMap[sec].val+=d.val;sectorMap[sec].count++;});
+  const sectorRows=Object.entries(sectorMap).sort((a,b)=>b[1].val-a[1].val).map(([sec,data])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0eeea;"><span style="font-size:12px;">${sec} <span style="color:#888;font-size:10px;">(${data.count} pos)</span></span><div style="display:flex;align-items:center;gap:12px;"><div style="width:120px;height:5px;background:#eee;border-radius:3px;overflow:hidden;"><div style="width:${(data.val/totalVal*100).toFixed(0)}%;height:100%;background:#111;border-radius:3px;"></div></div><span style="font-size:11px;font-family:monospace;min-width:45px;text-align:right;">${(data.val/totalVal*100).toFixed(1)}%</span><span style="font-size:11px;font-family:monospace;min-width:80px;text-align:right;">$${data.val.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</span></div></div>`).join('');
+  const insightsList=[
+    tGLP>=0?`\u2705 Portfolio is up <strong>${tGLP.toFixed(1)}%</strong> overall \u2014 ${winners} of ${holdingData.length} positions are profitable.`:`\u26A0\uFE0F Portfolio is down <strong>${Math.abs(tGLP).toFixed(1)}%</strong> \u2014 ${losers} of ${holdingData.length} positions are in the red.`,
+    `\uD83D\uDCCA Largest position: <strong>${biggestPos.s.ticker}</strong> at ${biggestPos.pctOfPort}% of portfolio.`,
+    bestHolder?`\uD83C\uDFC6 Best performer: <strong>${bestHolder.s.ticker}</strong> with a ${bestHolder.glP>=0?'+':''}${bestHolder.glP.toFixed(1)}% return.`:'',
+    worstHolder&&worstHolder.gl<0?`\uD83D\uDCC9 Worst performer: <strong>${worstHolder.s.ticker}</strong> at ${worstHolder.glP.toFixed(1)}%.`:'',
+    highRisk.length?`\u26A1 High volatility: <strong>${highRisk.map(d=>d.s.ticker).join(', ')}</strong> (beta > 1.5).`:'',
+    highDiv.length?`\uD83D\uDCB0 Income positions: <strong>${highDiv.map(d=>d.s.ticker).join(', ')}</strong> yield over 3%.`:'',
+    concentrated.length?`\u26A0\uFE0F Concentration risk: <strong>${concentrated.map(d=>d.s.ticker).join(', ')}</strong> over 25% each.`:'',
+    Object.keys(sectorMap).length===1?`\u26A0\uFE0F Single-sector concentration in <strong>${Object.keys(sectorMap)[0]}</strong>. Consider diversifying.`:`\uD83D\uDCC8 Diversified across <strong>${Object.keys(sectorMap).length} sectors</strong>: ${Object.keys(sectorMap).join(', ')}.`,
+  ].filter(Boolean);
+  const holdingRows=holdingData.map(d=>{
+    const sc=SC[d.s.sector]||{bg:'#f0f0f0',c:'#555'};
+    const aiVerdict=d.aiData?`<div style="background:#f9f8f5;border-left:3px solid #ccc;padding:8px 12px;margin-top:8px;font-size:11px;color:#444;line-height:1.5;"><strong>&#10022; AI Verdict:</strong> ${d.aiData.verdict}</div>`:'';
+    const aiScores=d.aiData?`<div style="display:flex;gap:5px;margin-top:6px;">${Object.entries(d.aiData.scores).map(([k,v])=>`<div style="text-align:center;background:#f7f6f3;border-radius:4px;padding:4px 6px;flex:1;"><div style="font-size:8px;text-transform:uppercase;color:#888;">${k}</div><div style="font-size:13px;font-weight:600;font-family:monospace;color:${v>65?'#0a6b44':v>35?'#7a5c0a':'#b23a1e'};">${v}</div></div>`).join('')}</div>`:'';
+    return`<div style="page-break-inside:avoid;margin-bottom:18px;border:1px solid #e8e6df;border-radius:8px;overflow:hidden;">
+      <div style="padding:12px 16px;background:#f7f6f3;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e8e6df;">
+        <div><span style="font-size:16px;font-weight:700;font-family:monospace;">${d.s.ticker}</span><span style="font-size:12px;color:#666;margin-left:8px;">${d.s.name}</span><span style="font-size:9px;padding:2px 6px;border-radius:99px;background:#eee;color:#555;margin-left:6px;">${d.s.sector}</span></div>
+        <div style="text-align:right;"><div style="font-size:15px;font-weight:600;font-family:monospace;">$${d.val.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</div><div style="font-size:11px;color:${d.gl>=0?'#0a6b44':'#b23a1e'};font-weight:500;">${d.gl>=0?'+':''}$${Math.abs(d.gl).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')} (${d.glP>=0?'+':''}${d.glP.toFixed(1)}%) &middot; ${d.pctOfPort}% of portfolio</div></div>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px;">
+          <div style="background:#f7f6f3;border-radius:5px;padding:9px;"><div style="font-size:9px;text-transform:uppercase;color:#888;margin-bottom:2px;">Shares</div><div style="font-size:14px;font-weight:500;font-family:monospace;">${d.h.shares}</div><div style="font-size:10px;color:#888;">@ $${d.h.avgCost.toFixed(2)} avg</div></div>
+          <div style="background:#f7f6f3;border-radius:5px;padding:9px;"><div style="font-size:9px;text-transform:uppercase;color:#888;margin-bottom:2px;">Current price</div><div style="font-size:14px;font-weight:500;font-family:monospace;">$${d.s.price.toFixed(2)}</div><div style="font-size:10px;color:${d.s.change>=0?'#0a6b44':'#b23a1e'};">${d.s.change>=0?'+':''}${d.s.change.toFixed(2)}% today</div></div>
+          <div style="background:#f7f6f3;border-radius:5px;padding:9px;"><div style="font-size:9px;text-transform:uppercase;color:#888;margin-bottom:2px;">AI price target</div><div style="font-size:14px;font-weight:500;font-family:monospace;color:${parseFloat(d.upside)>=0?'#0a6b44':'#b23a1e'};">$${d.p.base.toFixed(2)}</div><div style="font-size:10px;color:${parseFloat(d.upside)>=0?'#0a6b44':'#b23a1e'};">${parseFloat(d.upside)>=0?'+':''}${d.upside}% upside</div></div>
+          <div style="background:#f7f6f3;border-radius:5px;padding:9px;"><div style="font-size:9px;text-transform:uppercase;color:#888;margin-bottom:2px;">52W range</div><div style="font-size:12px;font-weight:500;font-family:monospace;">$${d.s.week52Low.toFixed(0)} &ndash; $${d.s.week52High.toFixed(0)}</div><div style="font-size:10px;color:#888;">Beta: ${d.s.beta}</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:8px;">${[['P/E',d.s.pe<0?'N/A':d.s.pe.toFixed(1)],['EPS',d.s.eps>0?'$'+d.s.eps.toFixed(2):'&mdash;'],['Div',d.s.divYield===0?'None':d.s.divYield.toFixed(1)+'%'],['Margin',d.s.profitMargin.toFixed(1)+'%'],['ROE',d.s.roe>0?d.s.roe.toFixed(1)+'%':'&mdash;'],['D/E',d.s.debtEq.toFixed(1)+'x']].map(([l,v])=>`<div style="border:1px solid #e8e6df;border-radius:4px;padding:5px 7px;"><div style="font-size:8px;text-transform:uppercase;color:#888;margin-bottom:1px;">${l}</div><div style="font-size:12px;font-weight:500;font-family:monospace;">${v}</div></div>`).join('')}</div>
+        ${aiVerdict}${aiScores}
+        ${d.h.notes?`<div style="margin-top:7px;font-size:11px;color:#888;font-style:italic;">&#128221; ${d.h.notes}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  const html=`<!DOCTYPE html><html><head><title>Portfolio Report &mdash; ${client.name}</title><style>*{box-sizing:border-box;}body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:0 auto;padding:32px 24px;color:#111;font-size:13px;line-height:1.5;}.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #111;padding-bottom:20px;margin-bottom:28px;}.logo{font-size:22px;font-weight:800;}.logo-sub{font-size:11px;color:#888;margin-top:2px;}.client-name{font-size:18px;font-weight:700;}.client-sub{font-size:11px;color:#888;margin-top:2px;}.section-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#888;font-weight:700;margin:24px 0 12px;padding-bottom:6px;border-bottom:1px solid #e8e6df;}.summary-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:8px;}.sum-box{background:#f7f6f3;border-radius:7px;padding:12px;}.sum-label{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:4px;}.sum-val{font-size:20px;font-weight:700;font-family:monospace;}.sum-sub{font-size:10px;color:#888;margin-top:2px;}.insight-item{padding:7px 12px;border-left:3px solid #ddd;margin-bottom:7px;font-size:12px;line-height:1.6;background:#fafaf8;border-radius:0 4px 4px 0;}.footer{margin-top:32px;font-size:10px;color:#aaa;border-top:1px solid #e8e6df;padding-top:14px;line-height:1.7;}@media print{body{padding:16px;}@page{margin:1.5cm;}}</style></head><body>
+  <div class="header"><div><div class="logo">ProScreen</div><div class="logo-sub">Professional Portfolio Report</div></div><div style="text-align:right;"><div class="client-name">${client.name}</div><div class="client-sub">${client.type} Account &middot; ${client.risk} Risk Profile</div><div class="client-sub">Report date: ${date}</div></div></div>
+  <div class="section-title">Portfolio summary</div>
+  <div class="summary-grid">
+    <div class="sum-box"><div class="sum-label">Total value</div><div class="sum-val">$${totalVal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</div><div class="sum-sub">${holdingData.length} positions</div></div>
+    <div class="sum-box"><div class="sum-label">Cost basis</div><div class="sum-val">$${totalCost.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</div><div class="sum-sub">total invested</div></div>
+    <div class="sum-box"><div class="sum-label">Gain / Loss</div><div class="sum-val" style="color:${tGL>=0?'#0a6b44':'#b23a1e'}">${tGL>=0?'+':''}$${Math.abs(tGL).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',')}</div><div class="sum-sub" style="color:${tGLP>=0?'#0a6b44':'#b23a1e'}">${tGLP>=0?'+':''}${tGLP.toFixed(1)}% return</div></div>
+    <div class="sum-box"><div class="sum-label">Winners</div><div class="sum-val" style="color:#0a6b44">${winners}</div><div class="sum-sub">profitable</div></div>
+    <div class="sum-box"><div class="sum-label">Losers</div><div class="sum-val" style="color:${losers>0?'#b23a1e':'#888'}">${losers}</div><div class="sum-sub">underwater</div></div>
+  </div>
+  <div class="section-title">Sector allocation</div><div style="margin-bottom:8px;">${sectorRows}</div>
+  <div class="section-title">Portfolio insights</div><div style="margin-bottom:8px;">${insightsList.map(i=>`<div class="insight-item">${i}</div>`).join('')}</div>
+  <div class="section-title">Holdings detail</div><div>${holdingRows}</div>
+  <div class="footer"><strong>ProScreen Professional</strong> &middot; Report prepared on ${date}<br/>Portfolio values reflect most recent available market data. AI price targets are model-generated estimates based on financial metrics and historical data.<br/><strong>This report is for informational purposes only and does not constitute investment advice or a guarantee of future performance.</strong> Always consult a qualified financial advisor before making investment decisions.</div>
+  </body></html>`;
+  const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),600);
+}
+
 function exportCSV(){const headers=['Ticker','Company','Sector','Market Cap ($B)','Price','Change %','P/E','EPS','Div Yield %','Profit Margin %','ROE %','D/E','Rev Growth %','Beta','52W High','52W Low'];const rows=filtered.map(s=>[s.ticker,`"${s.name}"`,s.sector,s.mcapVal,s.price,s.change,s.pe<0?'N/A':s.pe,s.eps,s.divYield,s.profitMargin,s.roe,s.debtEq,s.revGrowth,s.beta,s.week52High,s.week52Low]);const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`proscreen-${new Date().toISOString().split('T')[0]}.csv`;a.click();URL.revokeObjectURL(url);}
 function exportPDF(){const rows=filtered.map(s=>`<tr><td><b>${s.ticker}</b></td><td>${s.name}</td><td>${s.sector}</td><td>$${s.price.toFixed(2)}</td><td style="color:${s.change>=0?'#0a6b44':'#b23a1e'}">${pct(s.change)}</td><td>${s.pe<0?'—':s.pe.toFixed(1)}</td><td>${s.eps>0?'$'+s.eps.toFixed(2):s.eps.toFixed(2)}</td><td>${s.divYield===0?'—':s.divYield.toFixed(1)+'%'}</td><td>${s.profitMargin.toFixed(1)}%</td></tr>`).join('');const html=`<!DOCTYPE html><html><head><title>ProScreen Export</title><style>body{font-family:system-ui,sans-serif;font-size:11px;padding:20px;}table{width:100%;border-collapse:collapse;}th{text-align:left;font-size:9px;text-transform:uppercase;color:#777;padding:5px 6px;border-bottom:1px solid #ddd;}td{padding:6px;border-bottom:1px solid #eee;}</style></head><body><h2>ProScreen Report · ${new Date().toLocaleDateString()}</h2><table><thead><tr><th>Ticker</th><th>Company</th><th>Sector</th><th>Price</th><th>Change</th><th>P/E</th><th>EPS</th><th>Div</th><th>Margin</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;const w=window.open('','_blank');w.document.write(html);w.document.close();setTimeout(()=>w.print(),400);}
 
@@ -1528,7 +1746,7 @@ function showTab(tab,el){
   if(tab==='heatmap')renderHeatmap();
   if(tab==='aichat')updateContextPanel();
 }
-applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();
+applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();renderClientChips();
 initNotifications();
 loadLiveData();
 
