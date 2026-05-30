@@ -817,17 +817,26 @@ function saveUserData() {
   if (!currentUser) return;
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(async () => {
-    await _sb.from('user_data').upsert({
+    const { error } = await _sb.from('user_data').upsert({
       id: currentUser.id,
       data: { clients, watchlist, alerts },
       updated_at: new Date().toISOString()
-    });
+    }, { onConflict: 'id' });
+    if (error) {
+      console.error('ProScreen save error:', error);
+      showToast('Save failed', error.message, 'warning');
+    }
   }, 800);
 }
 
 async function loadUserData() {
   if (!currentUser) return;
-  const { data } = await _sb.from('user_data').select('data').eq('id', currentUser.id).single();
+  const { data, error } = await _sb.from('user_data').select('data').eq('id', currentUser.id).single();
+  if (error && error.code !== 'PGRST116') {
+    console.error('ProScreen load error:', error);
+    showToast('Could not load your data', error.message, 'warning');
+    return;
+  }
   if (!data?.data) return;
   const d = data.data;
   if (Array.isArray(d.clients))   { clients   = d.clients;   renderClientChips(); }
