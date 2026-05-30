@@ -271,6 +271,15 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 .chat-thinking{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);border-bottom-left-radius:4px;color:var(--text3);font-size:12px;}
 .suggestion-btn{font-size:11px;padding:4px 10px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
 .suggestion-btn:hover{background:var(--purple);color:#fff;}
+/* STRATEGY PERFORMANCE */
+.sp-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px;}
+.sp-table thead th{text-align:left;font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.sp-table tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.sp-table tbody tr:last-child td{border-bottom:none;}
+.sp-table tbody tr.stock-row:hover td{background:var(--bg3);}
+.sp-benchmark td{background:var(--bg3)!important;}
+.sp-period{border-radius:99px;margin-right:4px;font-size:11px;padding:3px 10px;}
+.sp-disclaimer{background:var(--gold-bg);border:1px solid var(--gold);border-radius:var(--r);padding:12px 16px;font-size:11px;color:var(--gold);line-height:1.7;margin-top:0;}
 </style>
 </head>
 <body>
@@ -305,6 +314,9 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
   </div>
   <div class="nav-item" onclick="showTab('aichat',this)">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h12a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z"/></svg>AI Chat
+  </div>
+  <div class="nav-item" onclick="showTab('strategy',this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 13h14M2 10V8M5 10V5M8 10V3M11 10V6M14 10V9"/></svg>Strategy
   </div>
   <div class="nav-item" onclick="showTab('settings',this)" style="margin-top:auto;">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>Settings
@@ -610,6 +622,70 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
       </div>
     </div>
 
+    <!-- BEAT THE MARKET -->
+    <div class="tab-pane" id="tab-strategy">
+
+      <!-- View toggle -->
+      <div style="display:flex;gap:6px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <button class="btm-view-btn" data-v="strategies" onclick="selectBtmView(this)" style="font-size:12px;padding:6px 16px;border-radius:var(--r);background:var(--gold-bg);color:var(--gold);border-color:var(--gold);">Strategies</button>
+        <button class="btm-view-btn" data-v="clients" onclick="selectBtmView(this)" style="font-size:12px;padding:6px 16px;border-radius:var(--r);">Client Portfolios</button>
+      </div>
+
+      <!-- Strategies section -->
+      <div id="btm-strategies-section">
+        <div id="btm-strat-cards" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Clients section -->
+      <div id="btm-clients-section" style="display:none;">
+        <div id="btm-client-cards" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;"></div>
+        <div id="btm-risk-table"></div>
+      </div>
+
+      <!-- Shared: period toggle -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span class="lbl" style="display:inline-block;margin-right:8px;">Period</span>
+          <button class="tbtn btm-period active" data-p="1M" onclick="selectBtmPeriod(this)">1M</button>
+          <button class="tbtn btm-period" data-p="3M" onclick="selectBtmPeriod(this)">3M</button>
+          <button class="tbtn btm-period" data-p="6M" onclick="selectBtmPeriod(this)">6M</button>
+          <button class="tbtn btm-period" data-p="1Y" onclick="selectBtmPeriod(this)">1Y</button>
+          <button class="tbtn btm-period" data-p="YTD" onclick="selectBtmPeriod(this)">YTD</button>
+        </div>
+        <div id="btm-period-sub" style="font-size:11px;color:var(--text3);">Equal-weighted portfolio vs SPY benchmark</div>
+      </div>
+
+      <!-- Shared: stat cards -->
+      <div id="btm-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+
+      <!-- Shared: chart -->
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <div class="card-title" style="margin-bottom:0;" id="btm-chart-label">Strategy vs SPY</div>
+          <div id="btm-legend" style="display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap;"></div>
+        </div>
+        <div style="height:260px;position:relative;"><canvas id="btm-line-chart"></canvas></div>
+      </div>
+
+      <!-- Shared: table -->
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <div class="card-title" style="margin:0;" id="btm-table-title">Stocks in Strategy</div>
+          <span id="btm-count-label" style="font-size:11px;color:var(--text3);"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table style="min-width:600px;">
+            <thead id="btm-thead"></thead>
+            <tbody id="btm-stocks-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sp-disclaimer">
+        <strong>⚠ For research and illustration only.</strong> Returns are modeled from live financial metrics and simulated price history — not actual trading results. SPY benchmark uses simulated price data with S&amp;P 500 characteristics. Past performance does not guarantee future results. This does not constitute investment advice.
+      </div>
+    </div>
+
     <!-- SETTINGS -->
     <div class="tab-pane" id="tab-settings">
       <div class="card">
@@ -669,6 +745,11 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 let API_BASE = 'https://proscreen-server-production.up.railway.app';
 const DEFAULT_TICKERS = ['AAPL','MSFT','NVDA','JPM','JNJ','XOM','WMT','PG','BAC','AMZN','NEE','CAT','UNH','META','GS','TSLA','MRK','CVX','INTC','SO','V','MA','KO','DIS','NFLX','AMD','PYPL','SBUX','HON','PFE'];
 const settings = { colorRows: true, sparklines: true, autoRefresh: true };
+const PAGE_TITLES = {
+  screener:'Stock Screener', watchlist:'Watchlist', portfolio:'Portfolio',
+  compare:'Compare', alerts:'Alerts', heatmap:'Market Heatmap',
+  aichat:'AI Chat', strategy:'Beat the Market', settings:'Settings'
+};
 
 // ═══════════════════════════════════════════════════
 // DATA
@@ -1731,6 +1812,390 @@ function askRisks() {
 // Update context panel when switching to AI chat tab
 const origShowTab = showTab;
 // ═══════════════════════════════════════════════════
+// BEAT THE MARKET
+// ═══════════════════════════════════════════════════
+const BTM_STRATEGIES = [
+  { id:'dividend',  name:'High Dividend Income', desc:'Div. Yield ≥ 3%, P/E < 30',    color:'#1fad7a', filter: s => s.divYield >= 3 && (s.pe < 0 || s.pe < 30) },
+  { id:'value',     name:'Deep Value',           desc:'P/E 0–15, positive EPS',       color:'#4a9eff', filter: s => s.pe > 0 && s.pe < 15 },
+  { id:'quality',   name:'Quality Growth',       desc:'ROE > 20%, Net Margin > 15%',  color:'#a78bfa', filter: s => s.roe >= 20 && s.profitMargin >= 15 },
+  { id:'momentum',  name:'Momentum Leaders',     desc:'Momentum score ≥ 0.65',        color:'#f97316', filter: s => s.momentum >= 0.65 },
+  { id:'defensive', name:'Defensive Income',     desc:'Beta ≤ 0.8, Div. Yield ≥ 2%', color:'#e8b84b', filter: s => s.beta <= 0.8 && s.divYield >= 2 },
+];
+const BTM_CLIENT_COLORS = ['#4a9eff','#1fad7a','#a78bfa','#f97316'];
+const SPY_PROXY = { ticker:'SPY', beta:1.0, momentum:0.58, price:520 };
+const BTM_PTS   = { '1M':30, '3M':90, '6M':180, '1Y':252 };
+let activeBtmStrat   = BTM_STRATEGIES[0];
+let activeBtmPeriod  = '1M';
+let activeBtmView    = 'strategies';
+let activeBtmClients = [];
+
+function btmPts() {
+  if (activeBtmPeriod === 'YTD') {
+    const start = new Date(new Date().getFullYear(), 0, 1);
+    return Math.max(5, Math.round((new Date() - start) / (1000*60*60*24) * 252/365));
+  }
+  return BTM_PTS[activeBtmPeriod] || 30;
+}
+
+function calcCumReturns(stocks, pts) {
+  if (!stocks.length) return new Array(pts+1).fill(0);
+  const histories = stocks.map(s => genHistory(s, pts));
+  const result = [];
+  for (let i = 0; i <= pts; i++) {
+    const avg = histories.reduce((sum,h) => sum + (h[i]-h[0])/h[0]*100, 0) / histories.length;
+    result.push(Math.round(avg*100)/100);
+  }
+  return result;
+}
+
+function calcClientReturns(client, pts) {
+  const valid = client.holdings.filter(h => ALL_STOCKS.find(s => s.ticker === h.ticker));
+  if (!valid.length) return new Array(pts+1).fill(0);
+  const totalVal = valid.reduce((sum,h) => { const s=ALL_STOCKS.find(x=>x.ticker===h.ticker); return sum+(s?s.price*h.shares:0); }, 0);
+  if (!totalVal) return new Array(pts+1).fill(0);
+  const weighted = valid.map(h => {
+    const s = ALL_STOCKS.find(x => x.ticker === h.ticker);
+    return { history: genHistory(s, pts), weight: (s.price * h.shares) / totalVal };
+  });
+  const result = [];
+  for (let i = 0; i <= pts; i++) {
+    const r = weighted.reduce((sum,{history,weight}) => sum + (history[i]-history[0])/history[0]*100*weight, 0);
+    result.push(Math.round(r*100)/100);
+  }
+  return result;
+}
+
+function btmDownsample(arr, maxLen) {
+  if (arr.length <= maxLen) return arr;
+  const out = [], step = (arr.length-1)/(maxLen-1);
+  for (let i = 0; i < maxLen; i++) out.push(arr[Math.round(i*step)]);
+  return out;
+}
+
+function btmLabels(pts, N) {
+  return Array.from({length:N}, (_,i) => {
+    const idx = Math.round(i * pts / (N-1));
+    const d = new Date();
+    d.setDate(d.getDate() - (pts - idx));
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  });
+}
+
+function btmRenderChart(datasets, labels) {
+  if (charts['btm']) { charts['btm'].destroy(); delete charts['btm']; }
+  const ctx = document.getElementById('btm-line-chart');
+  if (!ctx) return;
+  charts['btm'] = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets: datasets.map(d => ({
+      label:d.label, data:d.data, borderColor:d.color,
+      backgroundColor: d.fill ? d.color+'22' : 'transparent',
+      borderWidth: d.dashed ? 1.5 : 2,
+      borderDash: d.dashed ? [5,3] : [],
+      pointRadius:0, fill: d.fill ? 'origin' : false, tension:0.3,
+    }))},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${c.parsed.y>=0?'+':''}${c.parsed.y.toFixed(2)}%` }}},
+      scales:{
+        x:{ ticks:{color:'#5a5854',font:{size:10},maxTicksLimit:8}, grid:{color:'#2a2a26'} },
+        y:{ ticks:{color:'#5a5854',font:{size:10},callback:v=>(v>=0?'+':'')+v.toFixed(1)+'%'}, grid:{color:'#2a2a26'} }
+      }
+    }
+  });
+}
+
+// ── View toggle ──────────────────────────────────────
+function selectBtmView(btn) {
+  document.querySelectorAll('.btm-view-btn').forEach(b => {
+    b.style.background='var(--bg3)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border2)';
+  });
+  btn.style.background='var(--gold-bg)'; btn.style.color='var(--gold)'; btn.style.borderColor='var(--gold)';
+  activeBtmView = btn.dataset.v;
+  document.getElementById('btm-strategies-section').style.display = activeBtmView==='strategies' ? 'block' : 'none';
+  document.getElementById('btm-clients-section').style.display    = activeBtmView==='clients'    ? 'block' : 'none';
+  if (activeBtmView === 'clients') {
+    if (!activeBtmClients.length && clients.length) activeBtmClients = [clients[0].id];
+    renderBtmClientCards();
+  }
+  renderBeatTheMarket();
+}
+
+// ── Strategies view ──────────────────────────────────
+function renderBtmStratCards() {
+  const wrap = document.getElementById('btm-strat-cards');
+  if (!wrap) return;
+  wrap.innerHTML = BTM_STRATEGIES.map(s => {
+    const count  = ALL_STOCKS.filter(s.filter).length;
+    const active = s.id === activeBtmStrat.id;
+    return `<div onclick="selectBtmStrategy('${s.id}')" style="flex:1;min-width:140px;max-width:210px;background:${active?'var(--bg3)':'var(--bg2)'};border:1px solid ${active?s.color:'var(--border)'};border-radius:var(--r2);padding:12px 14px;cursor:pointer;transition:all .15s;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${s.color};margin-bottom:8px;"></div>
+      <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px;">${s.name}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.4;">${s.desc}</div>
+      <div style="font-size:11px;font-family:var(--font-mono);color:${s.color};">${count} stocks</div>
+    </div>`;
+  }).join('');
+}
+
+function selectBtmStrategy(id) {
+  activeBtmStrat = BTM_STRATEGIES.find(s => s.id === id);
+  renderBtmStratCards();
+  renderBeatTheMarket();
+}
+
+// ── Clients view ─────────────────────────────────────
+function renderBtmClientCards() {
+  const wrap     = document.getElementById('btm-client-cards');
+  const riskWrap = document.getElementById('btm-risk-table');
+  if (!wrap) return;
+  const pts      = btmPts();
+  const spyFinal = calcCumReturns([SPY_PROXY], pts).slice(-1)[0];
+  const riskColors = { Conservative:'var(--blue)', Moderate:'var(--gold)', Aggressive:'var(--red)' };
+
+  if (!clients.length) {
+    wrap.innerHTML = `<div style="width:100%;padding:2rem;text-align:center;border:1px dashed var(--border);border-radius:var(--r2);color:var(--text3);font-size:12px;">No clients yet — <span style="color:var(--gold);cursor:pointer;" onclick="showTab('portfolio',null)">go to Portfolio</span> to add clients and their holdings.</div>`;
+    if (riskWrap) riskWrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = clients.map(c => {
+    const cidx   = activeBtmClients.indexOf(c.id);
+    const active = cidx >= 0;
+    const color  = active ? BTM_CLIENT_COLORS[cidx] : 'var(--border)';
+    const ret    = c.holdings.length ? calcClientReturns(c, pts).slice(-1)[0] : null;
+    const retStr = ret !== null ? `${ret>=0?'+':''}${ret.toFixed(2)}%` : '—';
+    const retCol = ret !== null ? (ret>=0?'var(--green)':'var(--red)') : 'var(--text3)';
+    return `<div onclick="toggleBtmClient('${c.id}')" style="flex:1;min-width:150px;max-width:220px;background:${active?'var(--bg3)':'var(--bg2)'};border:1px solid ${active?color:'var(--border)'};border-left:3px solid ${active?color:'var(--border3,var(--border))'};border-radius:var(--r2);padding:12px 14px;cursor:pointer;transition:all .15s;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);">${c.name}</div>
+        ${active?`<span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin-top:2px;display:inline-block;"></span>`:''}
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:7px;">${c.type}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <span class="tag" style="background:${riskColors[c.risk]+'33'};color:${riskColors[c.risk]};font-size:9px;">${c.risk}</span>
+        <span style="font-size:10px;color:var(--text3);">${c.holdings.length} holdings</span>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:13px;font-weight:500;color:${retCol};">${retStr}</div>
+    </div>`;
+  }).join('') + `<div onclick="showTab('portfolio',null)" style="min-width:110px;max-width:160px;background:var(--bg2);border:1px dashed var(--border);border-radius:var(--r2);padding:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--text3);font-size:11px;"><span style="font-size:20px;line-height:1;">+</span>Add client</div>`;
+
+  // Risk profile breakdown table
+  if (riskWrap) {
+    const groups = ['Conservative','Moderate','Aggressive'].map(r => {
+      const group = clients.filter(c => c.risk===r && c.holdings.length);
+      if (!group.length) return null;
+      const avgRet = group.reduce((sum,c) => sum + calcClientReturns(c,pts).slice(-1)[0], 0) / group.length;
+      const alpha  = avgRet - spyFinal;
+      return { r, count:group.length, avgRet, alpha };
+    }).filter(Boolean);
+
+    if (groups.length) {
+      riskWrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px;">
+        <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <div class="card-title" style="margin:0;">Performance by Risk Profile</div>
+          <span style="font-size:10px;color:var(--text3);">${activeBtmPeriod} period · clients with holdings</span>
+        </div>
+        <div style="display:grid;grid-template-columns:110px 80px 110px 90px 110px 1fr;gap:0;padding:8px 14px 4px;"><span class="lbl">Profile</span><span class="lbl">Clients</span><span class="lbl">Avg Return</span><span class="lbl">vs SPY</span><span class="lbl">vs Other Profiles</span><span></span></div>
+        ${groups.map(g => {
+          const maxRet = Math.max(...groups.map(x=>Math.abs(x.avgRet)));
+          const barW   = maxRet ? Math.round(Math.abs(g.avgRet)/maxRet*120) : 0;
+          return `<div style="display:grid;grid-template-columns:110px 80px 110px 90px 110px 1fr;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);">
+            <span class="tag" style="background:${riskColors[g.r]+'33'};color:${riskColors[g.r]};font-size:10px;width:fit-content;">${g.r}</span>
+            <span style="font-size:12px;color:var(--text2);">${g.count} client${g.count>1?'s':''}</span>
+            <span style="font-family:var(--font-mono);font-size:12px;font-weight:500;color:${g.avgRet>=0?'var(--green)':'var(--red)'};">${g.avgRet>=0?'+':''}${g.avgRet.toFixed(2)}%</span>
+            <span style="font-family:var(--font-mono);font-size:12px;color:${g.alpha>=0?'var(--green)':'var(--red)'};">${g.alpha>=0?'+':''}${g.alpha.toFixed(2)}%</span>
+            <div style="background:var(--border);height:4px;border-radius:2px;overflow:hidden;"><div style="width:${barW}px;max-width:110px;height:4px;border-radius:2px;background:${riskColors[g.r]};"></div></div>
+            <span></span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    } else {
+      riskWrap.innerHTML = '';
+    }
+  }
+}
+
+function toggleBtmClient(id) {
+  const idx = activeBtmClients.indexOf(id);
+  if (idx >= 0) {
+    if (activeBtmClients.length === 1) return;
+    activeBtmClients.splice(idx, 1);
+  } else {
+    if (activeBtmClients.length >= 4) activeBtmClients.shift();
+    activeBtmClients.push(id);
+  }
+  renderBtmClientCards();
+  renderBeatTheMarket();
+}
+
+// ── Period ────────────────────────────────────────────
+function selectBtmPeriod(btn) {
+  document.querySelectorAll('.btm-period').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeBtmPeriod = btn.dataset.p;
+  if (activeBtmView === 'clients') renderBtmClientCards();
+  renderBeatTheMarket();
+}
+
+// ── Main render dispatcher ────────────────────────────
+function renderBeatTheMarket() {
+  if (activeBtmView === 'strategies') {
+    _btmRenderStrategies();
+  } else {
+    _btmRenderClients();
+  }
+}
+
+function _btmRenderStrategies() {
+  const s      = activeBtmStrat;
+  const pts    = btmPts();
+  const stocks = ALL_STOCKS.filter(s.filter);
+  const N      = Math.min(60, pts+1);
+
+  const stratRaw   = calcCumReturns(stocks, pts);
+  const spyRaw     = calcCumReturns([SPY_PROXY], pts);
+  const stratFinal = stratRaw[stratRaw.length-1];
+  const spyFinal   = spyRaw[spyRaw.length-1];
+  const alpha      = stratFinal - spyFinal;
+
+  const stockRets = stocks.map(st => {
+    const h = genHistory(st, pts);
+    return { ...st, ret: Math.round((h[h.length-1]-h[0])/h[0]*10000)/100 };
+  });
+  const winRate = stocks.length ? Math.round(stockRets.filter(st=>st.ret>spyFinal).length/stocks.length*100) : 0;
+
+  const col = v => v>=0?'var(--green)':'var(--red)';
+  const statsEl = document.getElementById('btm-stats');
+  if (statsEl) statsEl.innerHTML = [
+    { label:'Strategy Return',    val:(stratFinal>=0?'+':'')+stratFinal.toFixed(2)+'%', color:col(stratFinal), sub:`SPY: ${spyFinal>=0?'+':''}${spyFinal.toFixed(2)}%` },
+    { label:'Alpha vs SPY',       val:(alpha>=0?'+':'')+alpha.toFixed(2)+'%',           color:col(alpha),      sub:'Excess return above benchmark' },
+    { label:'Stocks in Strategy', val:stocks.length,                                    color:'var(--text)',    sub:`of ${ALL_STOCKS.length} total` },
+    { label:'Win Rate',           val:winRate+'%',                                      color:winRate>=50?'var(--green)':'var(--red)', sub:'% of stocks beat SPY' },
+  ].map(c=>`<div class="summary-card"><div class="summary-label">${c.label}</div><div class="summary-val" style="color:${c.color};font-size:20px;">${c.val}</div><div class="summary-sub">${c.sub}</div></div>`).join('');
+
+  const legend = document.getElementById('btm-legend');
+  if (legend) legend.innerHTML = `<span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:3px;border-radius:2px;background:${s.color};display:inline-block;"></span>${s.name}</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:3px;border-radius:2px;background:#5a5854;display:inline-block;"></span>SPY</span>`;
+  const lbl = document.getElementById('btm-chart-label');
+  if (lbl) lbl.textContent = `${s.name} vs SPY · ${activeBtmPeriod}`;
+
+  btmRenderChart([
+    { label:s.name, data:btmDownsample(stratRaw,N), color:s.color,   fill:true,  dashed:false },
+    { label:'SPY',  data:btmDownsample(spyRaw,N),   color:'#5a5854', fill:false, dashed:true  },
+  ], btmLabels(pts,N));
+
+  const thead = document.getElementById('btm-thead');
+  const tbody = document.getElementById('btm-stocks-body');
+  const tTitle = document.getElementById('btm-table-title');
+  const cntLbl = document.getElementById('btm-count-label');
+  if (tTitle) tTitle.textContent = 'Stocks in Strategy';
+  if (cntLbl) cntLbl.textContent = `${stocks.length} matching stocks`;
+  if (thead) thead.innerHTML = `<tr><th style="width:65px">Ticker</th><th style="width:155px">Company</th><th style="width:90px">Sector</th><th style="width:90px">Return</th><th style="width:90px" class="has-tip" data-tip="Return minus SPY return for the period.">vs SPY<span class="tip-badge">?</span></th><th style="width:85px">Beat SPY</th><th style="width:55px">P/E</th><th style="width:55px">Div</th><th style="width:55px">ROE</th></tr>`;
+  if (tbody) {
+    if (!stocks.length) { tbody.innerHTML=`<tr><td colspan="9" class="empty">No stocks match this strategy.</td></tr>`; return; }
+    tbody.innerHTML = stockRets.sort((a,b)=>b.ret-a.ret).map(st => {
+      const vs=st.ret-spyFinal, beat=st.ret>spyFinal;
+      return `<tr class="stock-row ${st.ret>=0?'row-up':'row-down'}">
+        <td class="tick">${st.ticker}</td>
+        <td style="color:var(--text2);font-size:11px;">${st.name}</td>
+        <td><span class="tag" style="background:${SC[st.sector]?.bg||'#1a1a17'};color:${SC[st.sector]?.c||'#9a9890'};font-size:9px;">${st.sector}</span></td>
+        <td style="font-family:var(--font-mono);color:${st.ret>=0?'var(--green)':'var(--red)'};">${st.ret>=0?'+':''}${st.ret.toFixed(2)}%</td>
+        <td style="font-family:var(--font-mono);color:${vs>=0?'var(--green)':'var(--red)'};">${vs>=0?'+':''}${vs.toFixed(2)}%</td>
+        <td><span class="tag" style="background:${beat?'var(--green-bg)':'var(--red-bg)'};color:${beat?'var(--green)':'var(--red)'};">${beat?'✓ Yes':'✗ No'}</span></td>
+        <td style="font-family:var(--font-mono);color:var(--text2);">${st.pe<0?'—':st.pe.toFixed(1)}</td>
+        <td style="font-family:var(--font-mono);color:var(--text2);">${st.divYield===0?'—':st.divYield.toFixed(1)+'%'}</td>
+        <td style="font-family:var(--font-mono);color:var(--text2);">${st.roe.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function _btmRenderClients() {
+  const pts      = btmPts();
+  const N        = Math.min(60, pts+1);
+  const spyRaw   = calcCumReturns([SPY_PROXY], pts);
+  const spyFinal = spyRaw[spyRaw.length-1];
+  const labels   = btmLabels(pts, N);
+
+  const selClients = activeBtmClients.map(id=>clients.find(c=>c.id===id)).filter(Boolean);
+  const primary    = selClients[0];
+
+  const datasets = [
+    ...selClients.map((c,i) => ({
+      label:c.name, data:btmDownsample(calcClientReturns(c,pts),N),
+      color:BTM_CLIENT_COLORS[i], fill:i===0, dashed:false
+    })),
+    { label:'SPY', data:btmDownsample(spyRaw,N), color:'#5a5854', fill:false, dashed:true }
+  ];
+
+  const legend = document.getElementById('btm-legend');
+  if (legend) legend.innerHTML = [
+    ...selClients.map((c,i) => `<span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:3px;border-radius:2px;background:${BTM_CLIENT_COLORS[i]};display:inline-block;"></span><span style="font-size:10px;">${c.name}</span></span>`),
+    `<span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:3px;border-radius:2px;background:#5a5854;display:inline-block;"></span><span style="font-size:10px;">SPY</span></span>`
+  ].join('');
+  const lbl = document.getElementById('btm-chart-label');
+  if (lbl) lbl.textContent = `Client Portfolio${selClients.length>1?'s':''} vs SPY · ${activeBtmPeriod}`;
+
+  btmRenderChart(datasets, labels);
+
+  if (!primary) {
+    const statsEl = document.getElementById('btm-stats');
+    if (statsEl) statsEl.innerHTML = '';
+    const tbody = document.getElementById('btm-stocks-body');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="empty">Add clients with holdings in the Portfolio tab to see performance here.</td></tr>`;
+    return;
+  }
+
+  const primRaw   = calcClientReturns(primary, pts);
+  const primFinal = primRaw[primRaw.length-1];
+  const alpha     = primFinal - spyFinal;
+
+  const holdingRets = primary.holdings.map(h => {
+    const s = ALL_STOCKS.find(x => x.ticker === h.ticker);
+    if (!s) return null;
+    const hist = genHistory(s, pts);
+    return { ...s, shares:h.shares, avgCost:h.avgCost, ret: Math.round((hist[hist.length-1]-hist[0])/hist[0]*10000)/100 };
+  }).filter(Boolean);
+  const winRate = holdingRets.length ? Math.round(holdingRets.filter(h=>h.ret>spyFinal).length/holdingRets.length*100) : 0;
+
+  const col = v => v>=0?'var(--green)':'var(--red)';
+  const statsEl = document.getElementById('btm-stats');
+  if (statsEl) statsEl.innerHTML = [
+    { label:`${primary.name} Return`, val:(primFinal>=0?'+':'')+primFinal.toFixed(2)+'%', color:col(primFinal), sub:`SPY: ${spyFinal>=0?'+':''}${spyFinal.toFixed(2)}%` },
+    { label:'Alpha vs SPY',           val:(alpha>=0?'+':'')+alpha.toFixed(2)+'%',         color:col(alpha),     sub:'Excess return above benchmark' },
+    { label:'Holdings',               val:primary.holdings.length,                         color:'var(--text)',   sub:`${primary.type} · ${primary.risk}` },
+    { label:'Win Rate',               val:winRate+'%',                                     color:winRate>=50?'var(--green)':'var(--red)', sub:'% of holdings beat SPY' },
+  ].map(c=>`<div class="summary-card"><div class="summary-label">${c.label}</div><div class="summary-val" style="color:${c.color};font-size:20px;">${c.val}</div><div class="summary-sub">${c.sub}</div></div>`).join('');
+
+  const thead  = document.getElementById('btm-thead');
+  const tbody  = document.getElementById('btm-stocks-body');
+  const tTitle = document.getElementById('btm-table-title');
+  const cntLbl = document.getElementById('btm-count-label');
+  if (tTitle) tTitle.textContent = `${primary.name}'s Holdings`;
+  if (cntLbl) cntLbl.textContent = `${primary.holdings.length} positions`;
+  if (thead) thead.innerHTML = `<tr><th style="width:65px">Ticker</th><th style="width:155px">Company</th><th style="width:65px">Shares</th><th style="width:85px">Value</th><th style="width:90px">Return</th><th style="width:90px" class="has-tip" data-tip="Holding return minus SPY return.">vs SPY<span class="tip-badge">?</span></th><th style="width:85px">Beat SPY</th><th style="width:90px">Gain / Loss</th></tr>`;
+  if (tbody) {
+    if (!holdingRets.length) { tbody.innerHTML=`<tr><td colspan="8" class="empty">No holdings found for this client in the screener universe.</td></tr>`; return; }
+    tbody.innerHTML = holdingRets.sort((a,b)=>b.ret-a.ret).map(h => {
+      const vs   = h.ret - spyFinal;
+      const beat = h.ret > spyFinal;
+      const val  = h.price * h.shares;
+      const gl   = (h.price - h.avgCost) * h.shares;
+      return `<tr class="stock-row ${h.ret>=0?'row-up':'row-down'}">
+        <td class="tick">${h.ticker}</td>
+        <td style="color:var(--text2);font-size:11px;">${h.name}</td>
+        <td style="font-family:var(--font-mono);color:var(--text2);">${h.shares}</td>
+        <td style="font-family:var(--font-mono);">$${val.toFixed(0)}</td>
+        <td style="font-family:var(--font-mono);color:${h.ret>=0?'var(--green)':'var(--red)'};">${h.ret>=0?'+':''}${h.ret.toFixed(2)}%</td>
+        <td style="font-family:var(--font-mono);color:${vs>=0?'var(--green)':'var(--red)'};">${vs>=0?'+':''}${vs.toFixed(2)}%</td>
+        <td><span class="tag" style="background:${beat?'var(--green-bg)':'var(--red-bg)'};color:${beat?'var(--green)':'var(--red)'};">${beat?'✓ Yes':'✗ No'}</span></td>
+        <td style="font-family:var(--font-mono);color:${gl>=0?'var(--green)':'var(--red)'};">${gl>=0?'+$':'-$'}${Math.abs(gl).toFixed(0)}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 document.querySelectorAll('.tbtn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeTF=btn.dataset.tf;openChart=null;applyFilters();if(compareList.length>=2)renderCompare();});});
@@ -1745,6 +2210,7 @@ function showTab(tab,el){
   openChart=null;
   if(tab==='heatmap')renderHeatmap();
   if(tab==='aichat')updateContextPanel();
+  if(tab==='strategy'){renderBtmStratCards();renderBeatTheMarket();}
 }
 applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();renderClientChips();
 initNotifications();
