@@ -6,6 +6,7 @@
 <title>ProScreen · Professional Stock Screener</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -286,6 +287,19 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 <div id="tooltip-box"></div>
 <div class="toast-container" id="toast-container"></div>
 
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay" style="position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;">
+  <div style="text-align:center;max-width:380px;padding:0 24px;width:100%;">
+    <div style="font-family:var(--font-display);font-size:44px;color:var(--text);margin-bottom:4px;">ProScreen</div>
+    <div style="font-size:11px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:48px;">Professional Edition · For Advisors</div>
+    <button id="auth-signin-btn" onclick="signInWithGitHub()" style="display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 24px;font-size:14px;font-weight:500;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);cursor:pointer;transition:all .2s;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+      Sign in with GitHub
+    </button>
+    <p style="font-size:11px;color:var(--text3);margin-top:24px;line-height:1.7;">Built for independent financial advisors.<br/>Your client data is private and encrypted.</p>
+  </div>
+</div>
+
 <div class="shell">
 <nav class="sidebar">
   <div class="logo">
@@ -320,6 +334,13 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
   </div>
   <div class="nav-item" onclick="showTab('settings',this)" style="margin-top:auto;">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>Settings
+  </div>
+  <div id="auth-user-section" style="padding:12px 20px;border-top:1px solid var(--border);display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <img id="auth-avatar" src="" style="width:22px;height:22px;border-radius:50%;display:none;flex-shrink:0;"/>
+      <span id="auth-user-name" style="font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;"></span>
+    </div>
+    <button onclick="signOut()" style="width:100%;font-size:11px;padding:5px 10px;background:var(--red-bg);color:var(--red);border-color:var(--red);">Sign out</button>
   </div>
 </nav>
 
@@ -750,6 +771,56 @@ const PAGE_TITLES = {
   compare:'Compare', alerts:'Alerts', heatmap:'Market Heatmap',
   aichat:'AI Chat', strategy:'Beat the Market', settings:'Settings'
 };
+
+// ═══════════════════════════════════════════════════
+// AUTH & PERSISTENCE
+// ═══════════════════════════════════════════════════
+const _sb = window.supabase.createClient(
+  'https://itergswqovpfbsmusmfn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0ZXJnc3dxb3ZwZmJzbXVzbWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTE1MTcsImV4cCI6MjA5NTcyNzUxN30.El3Tsq8QXFcRC8_gkaYwahaI97X64tbi4YoOedgrUn0'
+);
+let currentUser = null;
+let _saveTimer  = null;
+
+function saveUserData() {
+  if (!currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    await _sb.from('user_data').upsert({
+      id: currentUser.id,
+      data: { clients, watchlist, alerts },
+      updated_at: new Date().toISOString()
+    });
+  }, 800);
+}
+
+async function loadUserData() {
+  if (!currentUser) return;
+  const { data } = await _sb.from('user_data').select('data').eq('id', currentUser.id).single();
+  if (!data?.data) return;
+  const d = data.data;
+  if (Array.isArray(d.clients))   { clients   = d.clients;   renderClientChips(); }
+  if (Array.isArray(d.watchlist)) { watchlist = d.watchlist; document.getElementById('wl-badge').textContent = watchlist.length; renderWatchlist(); }
+  if (Array.isArray(d.alerts))    { alerts    = d.alerts;    renderAlerts(); updateAlertBadge(); }
+}
+
+async function signInWithGitHub() {
+  const btn = document.getElementById('auth-signin-btn');
+  if (btn) { btn.textContent = 'Redirecting to GitHub...'; btn.disabled = true; }
+  await _sb.auth.signInWithOAuth({
+    provider: 'github',
+    options: { redirectTo: window.location.href }
+  });
+}
+
+async function signOut() {
+  await _sb.auth.signOut();
+  currentUser = null;
+  clients = []; watchlist = []; alerts = []; portfolio = []; activeClientId = null;
+  document.getElementById('auth-overlay').style.display = 'flex';
+  document.getElementById('auth-user-section').style.display = 'none';
+  renderClientChips(); renderWatchlist(); renderPortfolio(); renderAlerts();
+}
 
 // ═══════════════════════════════════════════════════
 // DATA
@@ -1256,9 +1327,9 @@ function toggleLightMode(on){document.body.classList.toggle('light-mode',on);}
 // WATCHLIST
 // ═══════════════════════════════════════════════════
 function isWatched(t){return watchlist.includes(t);}
-function toggleWatch(t){if(isWatched(t)){watchlist=watchlist.filter(x=>x!==t);}else{watchlist.push(t);}document.getElementById('wl-badge').textContent=watchlist.length;renderTable();renderWatchlist();}
-function addToWatchlist(t){if(!isWatched(t)){watchlist.push(t);document.getElementById('wl-badge').textContent=watchlist.length;renderWatchlist();renderTable();}onWLSearch();}
-function removeWatch(t){watchlist=watchlist.filter(x=>x!==t);document.getElementById('wl-badge').textContent=watchlist.length;renderWatchlist();renderTable();}
+function toggleWatch(t){if(isWatched(t)){watchlist=watchlist.filter(x=>x!==t);}else{watchlist.push(t);}document.getElementById('wl-badge').textContent=watchlist.length;renderTable();renderWatchlist();saveUserData();}
+function addToWatchlist(t){if(!isWatched(t)){watchlist.push(t);document.getElementById('wl-badge').textContent=watchlist.length;renderWatchlist();renderTable();saveUserData();}onWLSearch();}
+function removeWatch(t){watchlist=watchlist.filter(x=>x!==t);document.getElementById('wl-badge').textContent=watchlist.length;renderWatchlist();renderTable();saveUserData();}
 function onWLSearch(){
   const q=document.getElementById('wl-search').value.trim().toLowerCase();
   const wrap=document.getElementById('wl-search-results');if(!q){wrap.innerHTML='';return;}
@@ -1308,6 +1379,7 @@ function addClient(){
   renderClientChips();
   selectClient(client.id);
   showToast('Client added','Portfolio created for '+name,'success');
+  saveUserData();
 }
 
 function selectClient(id){
@@ -1335,6 +1407,7 @@ function deleteCurrentClient(){
   document.getElementById('client-portfolio-view').style.display='none';
   renderClientChips();
   showToast('Client deleted','Portfolio removed','info');
+  saveUserData();
 }
 
 function renderClientChips(){
@@ -1372,8 +1445,9 @@ function addHolding(){
   document.getElementById('p-notes').value='';
   renderPortfolio();
   renderClientChips();
+  saveUserData();
 }
-function removeHolding(ticker){if(activeClientId){const c=clients.find(x=>x.id===activeClientId);if(c)c.holdings=c.holdings.filter(h=>h.ticker!==ticker);portfolio=c?c.holdings:[];}else{portfolio=portfolio.filter(h=>h.ticker!==ticker);}renderPortfolio();renderClientChips();}
+function removeHolding(ticker){if(activeClientId){const c=clients.find(x=>x.id===activeClientId);if(c)c.holdings=c.holdings.filter(h=>h.ticker!==ticker);portfolio=c?c.holdings:[];}else{portfolio=portfolio.filter(h=>h.ticker!==ticker);}renderPortfolio();renderClientChips();saveUserData();}
 function renderPortfolio(){if(!portfolio.length){document.getElementById('port-holdings').innerHTML='<div class="empty">No holdings yet.</div>';['port-total','port-gl','port-best','port-count'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=id==='port-count'?'0':'$0';});document.getElementById('port-gl-pct').textContent='0.00%';document.getElementById('port-best-sub').textContent='—';return;}let totalVal=0,totalCost=0,bestT='',bestP=-Infinity;const rows=portfolio.map(h=>{const s=ALL_STOCKS.find(x=>x.ticker===h.ticker);if(!s)return'';const val=s.price*h.shares,cost=h.avgCost*h.shares,gl=val-cost,glP=(gl/cost)*100;totalVal+=val;totalCost+=cost;if(glP>bestP){bestP=glP;bestT=h.ticker;}return`<div style="display:grid;grid-template-columns:65px 1fr 70px 80px 85px 85px 80px 1fr 45px;gap:8px;align-items:center;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;"><span class="tick">${h.ticker}</span><span style="color:var(--text2);font-size:12px;">${s.name}</span><span style="font-family:var(--font-mono);color:var(--text2)">${h.shares}x</span><span style="font-family:var(--font-mono);color:var(--text3)">@$${h.avgCost.toFixed(2)}</span><span style="font-family:var(--font-mono)">$${val.toFixed(0)}</span><span style="font-family:var(--font-mono);color:${gl>=0?'var(--green)':'var(--red)'}">${gl>=0?'+':''}$${Math.abs(gl).toFixed(0)}</span><span style="font-family:var(--font-mono);color:${glP>=0?'var(--green)':'var(--red)'}">${pct(glP)}</span><span style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.notes||'—'}</span><button style="font-size:10px;padding:2px 6px;" onclick="removeHolding('${h.ticker}')">×</button></div>`;});document.getElementById('port-holdings').innerHTML=`<div style="display:grid;grid-template-columns:65px 1fr 70px 80px 85px 85px 80px 1fr 45px;gap:8px;padding:6px 14px;margin-bottom:4px;">${['Ticker','Company','Shares','Avg cost','Value','Gain/Loss','Return','Notes',''].map(h=>`<span class="lbl">${h}</span>`).join('')}</div>${rows.join('')}`;const tGL=totalVal-totalCost,tGLP=(tGL/totalCost)*100;document.getElementById('port-total').textContent='$'+totalVal.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl').style.color=tGL>=0?'var(--green)':'var(--red)';document.getElementById('port-gl').textContent=(tGL>=0?'+$':'-$')+Math.abs(tGL).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');document.getElementById('port-gl-pct').textContent=pct(tGLP);document.getElementById('port-count').textContent=portfolio.length;document.getElementById('port-best').textContent=bestT||'—';document.getElementById('port-best-sub').textContent=bestP>-Infinity?pct(bestP):'—';}
 
 // ═══════════════════════════════════════════════════
@@ -1493,9 +1567,10 @@ function createAlert(){
   setTimeout(()=>fb.textContent='',3000);
   renderAlerts();updateAlertBadge();
   showToast(`Alert created: ${ticker}`,`Notify when ${ticker} ${conditionLabel(condition,value)}`,'success');
+  saveUserData();
 }
-function dismissAlert(id){const alert=alerts.find(a=>a.id===id);if(!alert)return;alert.dismissed=true;clearInterval(alertIntervals[id]);delete alertIntervals[id];renderAlerts();updateAlertBadge();}
-function clearAllAlerts(){alerts.forEach(a=>{a.dismissed=true;clearInterval(alertIntervals[a.id]);delete alertIntervals[a.id];});renderAlerts();updateAlertBadge();}
+function dismissAlert(id){const alert=alerts.find(a=>a.id===id);if(!alert)return;alert.dismissed=true;clearInterval(alertIntervals[id]);delete alertIntervals[id];renderAlerts();updateAlertBadge();saveUserData();}
+function clearAllAlerts(){alerts.forEach(a=>{a.dismissed=true;clearInterval(alertIntervals[a.id]);delete alertIntervals[a.id];});renderAlerts();updateAlertBadge();saveUserData();}
 function checkAllNow(){showToast('Checking','Running price checks now...','info',2000);runAlertCheck();}
 function updateAlertBadge(){const triggered=alerts.filter(a=>a.triggered&&!a.dismissed).length;const badge=document.getElementById('alert-nav-badge');badge.style.display=triggered?'inline':'none';badge.textContent=triggered;}
 function quickAlert(ticker){showTab('alerts',document.querySelector('.nav-item:nth-child(5)'));document.getElementById('al-ticker').value=ticker;showToast('Quick alert','Fill in the condition and value for '+ticker,'info',3000);}
@@ -2223,6 +2298,27 @@ if(localStorage.getItem('ai-hint-dismissed')){
 }
 
 setInterval(()=>{if(alerts.filter(a=>!a.triggered&&!a.dismissed).length>0)runAlertCheck();},30000);
+
+_sb.auth.onAuthStateChange(async (event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    document.getElementById('auth-overlay').style.display = 'none';
+    const meta   = session.user.user_metadata || {};
+    const uname  = meta.user_name || meta.name || session.user.email || 'Advisor';
+    const uavatar = meta.avatar_url;
+    const userSection = document.getElementById('auth-user-section');
+    const userName    = document.getElementById('auth-user-name');
+    const avatar      = document.getElementById('auth-avatar');
+    if (userSection) userSection.style.display = 'block';
+    if (userName)    userName.textContent = uname;
+    if (avatar && uavatar) { avatar.src = uavatar; avatar.style.display = 'inline-block'; }
+    await loadUserData();
+  } else {
+    currentUser = null;
+    document.getElementById('auth-overlay').style.display = 'flex';
+    document.getElementById('auth-user-section').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
