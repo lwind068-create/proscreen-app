@@ -564,7 +564,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
       <div class="create-form">
         <div class="create-form-title">Create new alert</div>
         <div class="form-grid">
-          <div class="fl"><label class="lbl">Ticker</label><input id="al-ticker" type="text" placeholder="AAPL" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/></div>
+          <div class="fl"><label class="lbl">Stock</label><select id="al-ticker"></select></div>
           <div class="fl"><label class="lbl">Condition</label><select id="al-cond"><option value="price_below">Price drops below $</option><option value="price_above">Price rises above $</option><option value="change_below">Day change below %</option><option value="change_above">Day change above %</option><option value="volume_above">Volume exceeds (M)</option></select></div>
           <div class="fl"><label class="lbl">Value</label><input id="al-val" type="number" placeholder="200.00" step="0.01" min="0"/></div>
           <div class="fl"><label class="lbl">Check every</label><select id="al-interval"><option value="60000">1 minute</option><option value="300000" selected>5 minutes</option><option value="900000">15 minutes</option><option value="3600000">1 hour</option></select></div>
@@ -1003,7 +1003,7 @@ async function loadLiveData(){
     const liveStocks=await res.json();
     if(!liveStocks.length)throw new Error('No data');
     ALL_STOCKS.length=0;liveStocks.forEach(s=>ALL_STOCKS.push(s));
-    applyFilters();renderHeatmap();
+    applyFilters();renderHeatmap();populateAlertTicker();
     showBanner(`✓ Live data loaded — ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()}`,'green');
     setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
     if(settings.autoRefresh)setInterval(refreshPrices,5*60*1000);
@@ -1701,7 +1701,7 @@ function createAlert(){
   if(checkCondition(alert,stock)){alert.triggered=true;alert.triggeredAt=new Date().toISOString();alert.triggeredPrice=stock.price;showToast(`Already triggered: ${ticker}`,`${ticker} already meets: ${conditionLabel(condition,value)}`,'triggered',0);}
   else{alertIntervals[alert.id]=setInterval(()=>runAlertCheck(),interval);}
   alerts.push(alert);
-  document.getElementById('al-ticker').value='';document.getElementById('al-val').value='';
+  document.getElementById('al-val').value='';
   fb.textContent=`✓ Alert created for ${ticker}`;fb.style.color='var(--green)';
   setTimeout(()=>fb.textContent='',3000);
   renderAlerts();updateAlertBadge();
@@ -1711,6 +1711,7 @@ function createAlert(){
 function dismissAlert(id){const alert=alerts.find(a=>a.id===id);if(!alert)return;alert.dismissed=true;clearInterval(alertIntervals[id]);delete alertIntervals[id];renderAlerts();updateAlertBadge();saveUserData();}
 function clearAllAlerts(){alerts.forEach(a=>{a.dismissed=true;clearInterval(alertIntervals[a.id]);delete alertIntervals[a.id];});renderAlerts();updateAlertBadge();saveUserData();}
 function checkAllNow(){showToast('Checking','Running price checks now...','info',2000);runAlertCheck();}
+function populateAlertTicker(){const sel=document.getElementById('al-ticker');if(!sel)return;const cur=sel.value;sel.innerHTML=ALL_STOCKS.map(s=>`<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`).join('');if(cur)sel.value=cur;}
 function updateAlertBadge(){const triggered=alerts.filter(a=>a.triggered&&!a.dismissed).length;const badge=document.getElementById('alert-nav-badge');badge.style.display=triggered?'inline':'none';badge.textContent=triggered;}
 function quickAlert(ticker){showTab('alerts',document.querySelector('.nav-item:nth-child(5)'));document.getElementById('al-ticker').value=ticker;showToast('Quick alert','Fill in the condition and value for '+ticker,'info',3000);}
 function renderAlerts(){const active=alerts.filter(a=>!a.dismissed);document.getElementById('stat-total').textContent=active.length;document.getElementById('stat-watching').textContent=active.filter(a=>!a.triggered).length;document.getElementById('stat-triggered').textContent=active.filter(a=>a.triggered).length;const container=document.getElementById('alert-list');if(!active.length){container.innerHTML='<div class="empty">No alerts yet.</div>';return;}const condLabel={price_below:'drops below',price_above:'rises above',change_below:'day change below',change_above:'day change above',volume_above:'volume above'};const isPrice=c=>c==='price_below'||c==='price_above';container.innerHTML=active.map(a=>{const stock=ALL_STOCKS.find(s=>s.ticker===a.ticker);if(!stock)return'';const progress=a.triggered?100:getProgress(a,stock);const progressColor=a.triggered?'var(--red)':progress>70?'var(--gold)':'var(--green)';const methodIcons={browser:'🔔',email:'📧',sms:'📱'};return`<div class="alert-card ${a.triggered?'triggered':'watching'}"><div class="alert-card-top"><div style="display:flex;align-items:center;gap:12px;"><span class="alert-ticker-big">${a.ticker}</span><div><div class="alert-desc-text">When ${a.ticker} <strong>${condLabel[a.condition]||a.condition} ${isPrice(a.condition)?'$':''}${a.val||a.value}${!isPrice(a.condition)?'%':''}</strong></div><div style="font-size:11px;color:var(--text3);margin-top:2px;">Now: <span style="font-family:var(--font-mono)">$${stock.price.toFixed(2)}</span> · <span style="${stock.change>=0?'color:var(--green)':'color:var(--red)'}">${pct(stock.change)}</span></div></div></div><div class="alert-card-actions"><span class="tag" style="background:${a.triggered?'var(--red-bg)':'var(--gold-bg)'};color:${a.triggered?'var(--red)':'var(--gold)'};">${a.triggered?'🔔 Triggered':'👁 Watching'}</span><button onclick="dismissAlert('${a.id}')" style="font-size:10px;padding:2px 8px;background:var(--red-bg);color:var(--red);border-color:var(--red);">Dismiss</button></div></div><div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px;"><span>Progress to trigger</span><span style="font-family:var(--font-mono)">${progress.toFixed(0)}%</span></div><div class="alert-progress-bar"><div class="alert-progress-fill" style="width:${progress}%;background:${progressColor};"></div></div></div><div class="alert-meta-row">${a.methods.map(m=>`<span class="alert-meta-chip">${methodIcons[m]||m}</span>`).join('')}<span class="alert-meta-chip">Created ${new Date(a.createdAt).toLocaleDateString()}</span></div>${a.triggered?`<div class="triggered-banner">🔔 <strong>Triggered at ${new Date(a.triggeredAt).toLocaleTimeString()}</strong> — hit $${a.triggeredPrice?.toFixed(2)}</div>`:''}</div>`;}).join('');}
@@ -2425,6 +2426,7 @@ function showTab(tab,el){
   if(tab==='heatmap')renderHeatmap();
   if(tab==='aichat')updateContextPanel();
   if(tab==='strategy'){renderBtmStratCards();renderBeatTheMarket();}
+  if(tab==='alerts')populateAlertTicker();
 }
 applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();renderClientChips();
 initNotifications();
