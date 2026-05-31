@@ -813,32 +813,45 @@ const _sb = window.supabase.createClient(
 let currentUser = null;
 let _saveTimer  = null;
 
+const _LOCAL_KEY = 'proscreen_data';
+
 function saveUserData() {
+  const payload = { clients, watchlist, alerts };
+  // Always save to localStorage immediately
+  try { localStorage.setItem(_LOCAL_KEY, JSON.stringify(payload)); } catch(e) {}
+  // Also sync to Supabase if logged in
   if (!currentUser) return;
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(async () => {
     const { error } = await _sb.from('user_data').upsert({
       id: currentUser.id,
-      data: { clients, watchlist, alerts },
+      data: payload,
       updated_at: new Date().toISOString()
     }, { onConflict: 'id' });
-    if (error) {
-      console.error('ProScreen save error:', error);
-      showToast('Save failed', error.message, 'warning');
-    }
+    if (error) console.error('Supabase sync error:', error);
   }, 800);
 }
 
 async function loadUserData() {
-  if (!currentUser) return;
-  const { data, error } = await _sb.from('user_data').select('data').eq('id', currentUser.id).single();
-  if (error && error.code !== 'PGRST116') {
-    console.error('ProScreen load error:', error);
-    showToast('Could not load your data', error.message, 'warning');
-    return;
+  // Try Supabase first for cross-device sync
+  if (currentUser) {
+    try {
+      const { data } = await _sb.from('user_data').select('data').eq('id', currentUser.id).single();
+      if (data?.data) {
+        _applyLoadedData(data.data);
+        localStorage.setItem(_LOCAL_KEY, JSON.stringify(data.data));
+        return;
+      }
+    } catch(e) { console.error('Supabase load error:', e); }
   }
-  if (!data?.data) return;
-  const d = data.data;
+  // Fall back to localStorage
+  try {
+    const local = localStorage.getItem(_LOCAL_KEY);
+    if (local) _applyLoadedData(JSON.parse(local));
+  } catch(e) {}
+}
+
+function _applyLoadedData(d) {
   if (Array.isArray(d.clients))   { clients   = d.clients;   renderClientChips(); }
   if (Array.isArray(d.watchlist)) { watchlist = d.watchlist; document.getElementById('wl-badge').textContent = watchlist.length; renderWatchlist(); }
   if (Array.isArray(d.alerts))    { alerts    = d.alerts;    renderAlerts(); updateAlertBadge(); }
@@ -906,6 +919,7 @@ async function forgotPassword() {
 async function signOut() {
   await _sb.auth.signOut();
   currentUser = null;
+  try { localStorage.removeItem(_LOCAL_KEY); } catch(e) {}
   clients = []; watchlist = []; alerts = []; portfolio = []; activeClientId = null;
   document.getElementById('auth-overlay').style.display = 'flex';
   document.getElementById('auth-user-section').style.display = 'none';
