@@ -2389,12 +2389,12 @@ if(localStorage.getItem('ai-hint-dismissed')){
 
 setInterval(()=>{if(alerts.filter(a=>!a.triggered&&!a.dismissed).length>0)runAlertCheck();},30000);
 
-_sb.auth.onAuthStateChange(async (event, session) => {
+function _applySession(session) {
   if (session?.user) {
     currentUser = session.user;
     document.getElementById('auth-overlay').style.display = 'none';
-    const meta   = session.user.user_metadata || {};
-    const uname  = meta.full_name || meta.user_name || meta.name || session.user.email || 'Advisor';
+    const meta    = session.user.user_metadata || {};
+    const uname   = meta.full_name || meta.user_name || meta.name || session.user.email || 'Advisor';
     const uavatar = meta.avatar_url;
     const userSection = document.getElementById('auth-user-section');
     const userName    = document.getElementById('auth-user-name');
@@ -2402,11 +2402,24 @@ _sb.auth.onAuthStateChange(async (event, session) => {
     if (userSection) userSection.style.display = 'block';
     if (userName)    userName.textContent = uname;
     if (avatar && uavatar) { avatar.src = uavatar; avatar.style.display = 'inline-block'; }
-    await loadUserData();
   } else {
     currentUser = null;
     document.getElementById('auth-overlay').style.display = 'flex';
     document.getElementById('auth-user-section').style.display = 'none';
+  }
+}
+
+// Check for existing session on page load first
+_sb.auth.getSession().then(async ({ data: { session } }) => {
+  _applySession(session);
+  if (session?.user) await loadUserData();
+});
+
+// Then keep listening for changes (login, logout, token refresh)
+_sb.auth.onAuthStateChange(async (event, session) => {
+  _applySession(session);
+  if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+    await loadUserData();
   }
 });
 </script>
