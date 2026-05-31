@@ -1647,7 +1647,41 @@ function checkCondition(alert,stock){switch(alert.condition){case 'price_below':
 function conditionLabel(cond,val){const map={price_below:`price drops below $${val}`,price_above:`price rises above $${val}`,change_below:`day change falls below ${val}%`,change_above:`day change rises above ${val}%`,volume_above:`volume exceeds ${val}M`};return map[cond]||cond;}
 function getProgress(alert,stock){if(alert.condition==='price_below'){const range=alert.startPrice-alert.value;const current=stock.price-alert.value;return Math.min(100,Math.max(0,(1-current/range)*100));}if(alert.condition==='price_above'){const range=alert.value-alert.startPrice;const current=alert.value-stock.price;return Math.min(100,Math.max(0,(1-current/range)*100));}if(alert.condition==='change_below')return Math.min(100,Math.max(0,(Math.abs(stock.change)/alert.value)*100));if(alert.condition==='change_above')return Math.min(100,Math.max(0,(stock.change/alert.value)*100));if(alert.condition==='volume_above')return Math.min(100,Math.max(0,(stock.volumeM/alert.value)*100));return 0;}
 function updateMethodToggle(method){const cb=document.getElementById('m-'+method);const toggle=document.getElementById('toggle-'+method);toggle.classList.toggle('active',cb.checked);if(method==='email')document.getElementById('email-field').style.display=cb.checked?'block':'none';if(method==='sms')document.getElementById('sms-field').style.display=cb.checked?'block':'none';}
-function runAlertCheck(){lastCheckTime=new Date();const stat=document.getElementById('stat-check');if(stat)stat.textContent=lastCheckTime.toLocaleTimeString();const active=alerts.filter(a=>!a.triggered&&!a.dismissed);for(const alert of active){const stock=ALL_STOCKS.find(s=>s.ticker===alert.ticker);if(!stock)continue;stock.price=parseFloat((stock.price*(1+(Math.random()-0.498)*0.002)).toFixed(2));stock.change=parseFloat((stock.change+(Math.random()-0.5)*0.1).toFixed(2));if(checkCondition(alert,stock)){alert.triggered=true;alert.triggeredAt=new Date().toISOString();alert.triggeredPrice=stock.price;if(alert.methods.includes('browser')){sendBrowserNotification(`🔔 ${alert.ticker} Alert`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)} — $${stock.price.toFixed(2)}`,alert.ticker);showToast(`🔔 Alert: ${alert.ticker}`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)}<br/>Now: <strong>$${stock.price.toFixed(2)}</strong>`,'triggered',0);}clearInterval(alertIntervals[alert.id]);delete alertIntervals[alert.id];}}renderAlerts();updateAlertBadge();}
+async function runAlertCheck(){
+  lastCheckTime=new Date();
+  const stat=document.getElementById('stat-check');
+  if(stat)stat.textContent=lastCheckTime.toLocaleTimeString();
+  const active=alerts.filter(a=>!a.triggered&&!a.dismissed);
+  if(!active.length)return;
+
+  // Fetch real prices for watched tickers from Railway
+  const tickers=[...new Set(active.map(a=>a.ticker))];
+  try{
+    const res=await fetch(`${API_BASE}/api/screener?tickers=${tickers.join(',')}`);
+    if(res.ok){
+      const live=await res.json();
+      live.forEach(ld=>{
+        const s=ALL_STOCKS.find(x=>x.ticker===ld.ticker);
+        if(s){s.price=ld.price;s.change=ld.change;s.volumeM=ld.volumeM;}
+      });
+    }
+  }catch(e){console.log('Alert price fetch failed, using cached prices');}
+
+  for(const alert of active){
+    const stock=ALL_STOCKS.find(s=>s.ticker===alert.ticker);
+    if(!stock)continue;
+    if(checkCondition(alert,stock)){
+      alert.triggered=true;alert.triggeredAt=new Date().toISOString();alert.triggeredPrice=stock.price;
+      if(alert.methods.includes('browser')){
+        sendBrowserNotification(`🔔 ${alert.ticker} Alert`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)} — $${stock.price.toFixed(2)}`,alert.ticker);
+        showToast(`🔔 Alert: ${alert.ticker}`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)}<br/>Now: <strong>$${stock.price.toFixed(2)}</strong>`,'triggered',0);
+      }
+      clearInterval(alertIntervals[alert.id]);delete alertIntervals[alert.id];
+      saveUserData();
+    }
+  }
+  renderAlerts();updateAlertBadge();
+}
 function createAlert(){
   const ticker=document.getElementById('al-ticker').value.trim().toUpperCase();
   const condition=document.getElementById('al-cond').value;
