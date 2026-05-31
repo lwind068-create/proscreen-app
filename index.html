@@ -1676,6 +1676,9 @@ async function runAlertCheck(){
         sendBrowserNotification(`🔔 ${alert.ticker} Alert`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)} — $${stock.price.toFixed(2)}`,alert.ticker);
         showToast(`🔔 Alert: ${alert.ticker}`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)}<br/>Now: <strong>$${stock.price.toFixed(2)}</strong>`,'triggered',0);
       }
+      if(alert.methods.includes('email')&&alert.email){
+        fetch(`${API_BASE}/api/alert-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:alert.email,ticker:alert.ticker,condition:conditionLabel(alert.condition,alert.value),price:stock.price.toFixed(2)})}).catch(e=>console.error('Email alert failed:',e));
+      }
       clearInterval(alertIntervals[alert.id]);delete alertIntervals[alert.id];
       saveUserData();
     }
@@ -1697,7 +1700,8 @@ function createAlert(){
   if(isNaN(value)||value<=0){fb.textContent='Enter a valid value.';fb.style.color='var(--red)';return;}
   if(!useBrowser&&!useEmail&&!useSMS){fb.textContent='Select a notification method.';fb.style.color='var(--red)';return;}
   const methods=[];if(useBrowser)methods.push('browser');if(useEmail)methods.push('email');if(useSMS)methods.push('sms');
-  const alert={id:Date.now().toString(),ticker,condition,value,methods,interval,triggered:false,dismissed:false,createdAt:new Date().toISOString(),triggeredAt:null,triggeredPrice:null,startPrice:stock.price};
+  const alertEmail=useEmail?(document.getElementById('al-email').value.trim()||currentUser?.email||''):'';
+  const alert={id:Date.now().toString(),ticker,condition,value,methods,interval,email:alertEmail,triggered:false,dismissed:false,createdAt:new Date().toISOString(),triggeredAt:null,triggeredPrice:null,startPrice:stock.price};
   if(checkCondition(alert,stock)){alert.triggered=true;alert.triggeredAt=new Date().toISOString();alert.triggeredPrice=stock.price;showToast(`Already triggered: ${ticker}`,`${ticker} already meets: ${conditionLabel(condition,value)}`,'triggered',0);}
   else{alertIntervals[alert.id]=setInterval(()=>runAlertCheck(),interval);}
   alerts.push(alert);
@@ -2426,7 +2430,7 @@ function showTab(tab,el){
   if(tab==='heatmap')renderHeatmap();
   if(tab==='aichat')updateContextPanel();
   if(tab==='strategy'){renderBtmStratCards();renderBeatTheMarket();}
-  if(tab==='alerts')populateAlertTicker();
+  if(tab==='alerts'){populateAlertTicker();const em=document.getElementById('al-email');if(em&&!em.value&&currentUser?.email)em.value=currentUser.email;}
 }
 applyFilters();renderWatchlist();renderPortfolio();renderAlerts();renderHeatmap();renderClientChips();
 initNotifications();
