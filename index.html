@@ -2425,15 +2425,32 @@ function _applySession(session) {
 }
 
 // Check for existing session on page load first
-_sb.auth.getSession().then(async ({ data: { session } }) => {
-  _applySession(session);
-  if (session?.user) await loadUserData();
-});
+(async () => {
+  let { data: { session } } = await _sb.auth.getSession();
 
-// Then keep listening for changes (login, logout, token refresh)
+  // If SDK didn't auto-restore session, force it from localStorage
+  if (!session) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('sb-itergswqovpfbsmusmfn-auth-token') || 'null');
+      if (stored?.access_token && stored?.refresh_token) {
+        const { data } = await Promise.race([
+          _sb.auth.setSession({ access_token: stored.access_token, refresh_token: stored.refresh_token }),
+          new Promise((_, r) => setTimeout(() => r('timeout'), 5000))
+        ]);
+        session = data?.session || null;
+      }
+    } catch(e) {}
+  }
+
+  _applySession(session);
+  // Always load localStorage immediately, then sync from Supabase
+  await loadUserData();
+})();
+
+// Keep listening for sign in / sign out / token refresh
 _sb.auth.onAuthStateChange(async (event, session) => {
   _applySession(session);
-  if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
     await loadUserData();
   }
 });
