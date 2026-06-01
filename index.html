@@ -1004,7 +1004,7 @@ async function loadLiveData(){
     if(!liveStocks.length)throw new Error('No data');
     ALL_STOCKS.length=0;liveStocks.forEach(s=>ALL_STOCKS.push(s));
     applyFilters();renderHeatmap();populateAlertTicker();
-    showBanner(`✓ Live data loaded — ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()}`,'green');
+    showBanner(`✓ Live data · ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()} · Prices may be delayed up to 15 min`,'green');
     setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
     if(settings.autoRefresh)setInterval(refreshPrices,5*60*1000);
   }catch(e){
