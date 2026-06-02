@@ -573,10 +573,8 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
         <div class="notif-method-row">
           <label class="method-toggle active" id="toggle-browser"><input type="checkbox" id="m-browser" checked onchange="updateMethodToggle('browser')"/>🔔 Browser</label>
           <label class="method-toggle" id="toggle-email"><input type="checkbox" id="m-email" onchange="updateMethodToggle('email')"/>📧 Email</label>
-          <label class="method-toggle" id="toggle-sms"><input type="checkbox" id="m-sms" onchange="updateMethodToggle('sms')"/>📱 SMS</label>
         </div>
         <div id="email-field" style="display:none;margin-bottom:12px;"><div class="fl"><label class="lbl">Email address</label><input id="al-email" type="email" placeholder="you@example.com"/></div></div>
-        <div id="sms-field" style="display:none;margin-bottom:12px;"><div class="fl"><label class="lbl">Phone number</label><input id="al-phone" type="tel" placeholder="+1234567890"/></div></div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="primary" onclick="createAlert()">+ Create alert</button>
           <span id="al-feedback" style="font-size:12px;color:var(--text3);"></span>
@@ -1696,7 +1694,7 @@ function createAlert(){
   const interval=parseInt(document.getElementById('al-interval').value);
   const useBrowser=document.getElementById('m-browser').checked;
   const useEmail=document.getElementById('m-email').checked;
-  const useSMS=document.getElementById('m-sms').checked;
+  const useSMS=false;
   const fb=document.getElementById('al-feedback');
   if(!ticker){fb.textContent='Enter a ticker.';fb.style.color='var(--red)';return;}
   const stock=ALL_STOCKS.find(s=>s.ticker===ticker);
