@@ -1004,7 +1004,7 @@ async function loadLiveData(){
     if(!liveStocks.length)throw new Error('No data');
     ALL_STOCKS.length=0;liveStocks.forEach(s=>ALL_STOCKS.push(s));
     applyFilters();renderHeatmap();populateAlertTicker();
-    showBanner(`✓ Data loaded · ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()} · Prices show previous close (upgrade Polygon for live prices)`,'green');
+    showBanner(`✓ Live data · ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()}`,'green');
     setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
   }catch(e){
     showBanner(`⚠ Live data unavailable — showing sample data (${e.message})`,'orange');
@@ -1019,7 +1019,7 @@ async function refreshPrices(){
     const fresh=await res.json();
     fresh.forEach(u=>{const e=ALL_STOCKS.find(s=>s.ticker===u.ticker);if(e){e.price=u.price;e.change=u.change;e.volumeM=u.volumeM;}});
     applyFilters();checkWatchlistAlerts();
-    showBanner(`↻ Refreshed · ${new Date().toLocaleTimeString()} · Previous close prices (Polygon free tier)`,'green');
+    showBanner(`↻ Prices refreshed · ${new Date().toLocaleTimeString()}`,'green');
     setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
   }catch(e){console.error('Price refresh failed:',e);}
 }
