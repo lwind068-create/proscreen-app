@@ -1006,17 +1006,21 @@ async function loadLiveData(){
     applyFilters();renderHeatmap();populateAlertTicker();
     showBanner(`✓ Live data · ${liveStocks.length} stocks · ${new Date().toLocaleTimeString()} · Prices may be delayed up to 15 min`,'green');
     setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
-    if(settings.autoRefresh)setInterval(refreshPrices,5*60*1000);
   }catch(e){
     showBanner(`⚠ Live data unavailable — showing sample data (${e.message})`,'orange');
   }
+  // Always set up auto-refresh regardless of whether initial load succeeded
+  if(settings.autoRefresh) setInterval(refreshPrices, 2*60*1000);
 }
 async function refreshPrices(){
   try{
     const res=await fetch(`${API_BASE}/api/screener?tickers=${ALL_STOCKS.map(s=>s.ticker).join(',')}`);
+    if(!res.ok)return;
     const fresh=await res.json();
     fresh.forEach(u=>{const e=ALL_STOCKS.find(s=>s.ticker===u.ticker);if(e){e.price=u.price;e.change=u.change;e.volumeM=u.volumeM;}});
     applyFilters();checkWatchlistAlerts();
+    showBanner(`↻ Prices refreshed · ${new Date().toLocaleTimeString()} · Delayed up to 15 min`,'green');
+    setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},3000);
   }catch(e){}
 }
 function showBanner(msg,color){
