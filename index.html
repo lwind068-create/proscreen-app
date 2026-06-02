@@ -1014,14 +1014,14 @@ async function loadLiveData(){
 }
 async function refreshPrices(){
   try{
-    const res=await fetch(`${API_BASE}/api/screener?tickers=${ALL_STOCKS.map(s=>s.ticker).join(',')}`);
+    const res=await fetch(`${API_BASE}/api/screener?tickers=${ALL_STOCKS.map(s=>s.ticker).join(',')}&_=${Date.now()}`,{cache:'no-store'});
     if(!res.ok)return;
     const fresh=await res.json();
     fresh.forEach(u=>{const e=ALL_STOCKS.find(s=>s.ticker===u.ticker);if(e){e.price=u.price;e.change=u.change;e.volumeM=u.volumeM;}});
     applyFilters();checkWatchlistAlerts();
-    showBanner(`↻ Prices refreshed · ${new Date().toLocaleTimeString()} · Delayed up to 15 min`,'green');
-    setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},3000);
-  }catch(e){}
+    showBanner(`↻ Prices updated · ${new Date().toLocaleTimeString()} · 15 min delayed (Polygon free tier)`,'green');
+    setTimeout(()=>{const b=document.getElementById('data-banner');if(b)b.style.display='none';},4000);
+  }catch(e){console.error('Price refresh failed:',e);}
 }
 function showBanner(msg,color){
   const b=document.getElementById('data-banner');
