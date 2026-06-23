@@ -887,7 +887,7 @@ async function loadUserData() {
   if (!currentUser) return;
   try {
     const timeout = new Promise((_, rej) => setTimeout(() => rej('timeout'), 3000));
-    const query   = _sb.from('user_data').select('data').eq('id', currentUser.id).single();
+    const query   = _sb.from('user_data').select('data').eq('id', currentUser.id).maybeSingle();
     const { data } = await Promise.race([query, timeout]);
     if (data?.data) {
       _applyLoadedData(data.data);
