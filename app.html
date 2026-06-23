@@ -356,7 +356,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
         <div>✓ AI chat assistant</div>
         <div>✓ Market heatmap &amp; watchlists</div>
       </div>
-      <button id="subscribe-btn" onclick="startCheckout()" style="width:100%;padding:13px;font-size:14px;font-weight:700;background:var(--gold);color:#0f0f0d;border:none;border-radius:var(--r);cursor:pointer;">Subscribe Now</button>
+      <button id="subscribe-btn" onclick="startCheckout(_planFromUrl)" style="width:100%;padding:13px;font-size:14px;font-weight:700;background:var(--gold);color:#0f0f0d;border:none;border-radius:var(--r);cursor:pointer;">Subscribe Now</button>
     </div>
     <button onclick="signOut()" style="font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;">Sign out</button>
   </div>
@@ -2625,7 +2625,7 @@ function _updateSubUI(d) {
   if (subscribeRow) subscribeRow.style.display = active ? 'none' : 'flex';
 }
 
-async function startCheckout() {
+async function startCheckout(plan = 'monthly') {
   if (!currentUser) return;
   const btn = event?.target;
   if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
@@ -2633,7 +2633,7 @@ async function startCheckout() {
     const r = await fetch(`${API_BASE}/api/billing/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, email: currentUser.email, successUrl: window.location.href + '?subscribed=true', cancelUrl: window.location.href }),
+      body: JSON.stringify({ userId: currentUser.id, email: currentUser.email, plan, successUrl: window.location.href + '?subscribed=true', cancelUrl: window.location.href }),
     });
     const d = await r.json();
     if (d.url) window.location.href = d.url;
@@ -2722,6 +2722,7 @@ _sb.auth.onAuthStateChange(async (event, session) => {
 
 // After Stripe checkout redirect, re-check subscription once auth is confirmed
 const _stripeReturn = new URLSearchParams(window.location.search).get('subscribed') === 'true';
+const _planFromUrl  = new URLSearchParams(window.location.search).get('plan') || 'monthly';
 if (_stripeReturn) history.replaceState({}, '', window.location.pathname);
 
 function _pollSubscription() {
