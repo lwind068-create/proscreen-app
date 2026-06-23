@@ -2564,8 +2564,12 @@ function _applySession(session) {
     // Check subscription and show paywall if needed
     checkSubscription(session.user.id).then(active => {
       const paywall = document.getElementById('paywall-overlay');
-      if (!active) { paywall.style.display = 'flex'; }
-      else { paywall.style.display = 'none'; }
+      if (!active) {
+        paywall.style.display = 'flex';
+        _pollSubscription();
+      } else {
+        paywall.style.display = 'none';
+      }
     });
   } else {
     currentUser = null;
@@ -2606,15 +2610,16 @@ _sb.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// After Stripe checkout redirect, re-check subscription
-if (new URLSearchParams(window.location.search).get('subscribed') === 'true') {
-  history.replaceState({}, '', window.location.pathname);
-  // Poll briefly — webhook may take a few seconds
+// After Stripe checkout redirect, re-check subscription once auth is confirmed
+const _stripeReturn = new URLSearchParams(window.location.search).get('subscribed') === 'true';
+if (_stripeReturn) history.replaceState({}, '', window.location.pathname);
+
+function _pollSubscription() {
+  if (!_stripeReturn) return;
   let tries = 0;
   const poll = setInterval(async () => {
-    if (!currentUser) { clearInterval(poll); return; }
     const active = await checkSubscription(currentUser.id);
-    if (active || ++tries >= 6) {
+    if (active || ++tries >= 8) {
       clearInterval(poll);
       if (active) {
         document.getElementById('paywall-overlay').style.display = 'none';
