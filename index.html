@@ -403,21 +403,12 @@ footer{border-top:1px solid var(--border);padding:40px;display:flex;justify-cont
   <h2 class="section-title">Simple, transparent<br/><em>pricing</em></h2>
   <p class="section-sub">No contracts. No hidden fees. Cancel anytime.</p>
 
-  <!-- Billing toggle -->
-  <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:36px;">
-    <span id="toggle-monthly-label" style="font-size:13px;font-weight:600;color:var(--text);">Monthly</span>
-    <div onclick="toggleBilling()" style="width:48px;height:26px;border-radius:99px;background:var(--border2);cursor:pointer;position:relative;transition:background .2s;" id="billing-toggle">
-      <div id="billing-knob" style="position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--gold);transition:transform .2s;"></div>
-    </div>
-    <span id="toggle-annual-label" style="font-size:13px;color:var(--text2);">Annual <span style="background:var(--green-bg);color:var(--green);border:1px solid rgba(26,158,110,0.2);border-radius:99px;padding:2px 8px;font-size:10px;margin-left:4px;">Save $188</span></span>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--border);margin-top:32px;max-width:840px;margin-left:auto;margin-right:auto;">
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:var(--border);margin-top:60px;max-width:840px;margin-left:auto;margin-right:auto;">
     <div class="pricing-card featured">
-      <div class="pricing-badge">Everything included</div>
-      <div class="price-tier">ProScreen</div>
-      <div class="price-amount" id="main-price">$49<span>/mo</span></div>
-      <div class="price-desc" id="main-price-desc">Full access to every feature. No tiers, no limits.</div>
+      <div class="pricing-badge">Founders Price</div>
+      <div class="price-tier">Monthly</div>
+      <div class="price-amount">$49<span>/mo</span></div>
+      <div class="price-desc">Full access to every feature. No tiers, no limits.</div>
       <ul class="price-features">
         <li>Live stock screener (30+ stocks)</li>
         <li>Unlimited AI stock analysis</li>
@@ -430,23 +421,23 @@ footer{border-top:1px solid var(--border);padding:40px;display:flex;justify-cont
         <li>Sector heatmap</li>
         <li>Beat the Market strategy tab</li>
       </ul>
-      <a href="/app.html" id="main-cta" class="price-cta" onclick="trackEvent('pricing_main_click')">Start 7-day free trial →</a>
+      <a href="/app.html?plan=monthly" class="price-cta" onclick="trackEvent('pricing_monthly_click')">Start 7-day free trial →</a>
     </div>
     <div class="pricing-card">
-      <div class="price-tier">Founding Advisor</div>
-      <div class="price-amount" id="founding-price" style="color:var(--gold)">$49<span>/mo</span></div>
-      <div class="price-desc" id="founding-price-desc">Same price, locked in forever — even as rates increase. First 5 advisors only.</div>
+      <div class="price-tier">Annual</div>
+      <div class="price-amount" style="color:var(--gold)">$399<span>/yr</span></div>
+      <div class="price-desc">$33/month — save $189 compared to monthly billing.</div>
       <ul class="price-features">
-        <li>Everything in ProScreen</li>
-        <li>Rate locked forever</li>
+        <li>Everything in Monthly</li>
+        <li>2 months free vs monthly</li>
         <li>Direct feature requests</li>
         <li>Early access to new features</li>
         <li>1-on-1 onboarding call with Lucas</li>
       </ul>
-      <a href="#" class="price-cta" style="background:var(--gold);color:#0c0c0a;border-color:var(--gold);" onclick="openDemo();trackEvent('pricing_founding_click');return false;">Claim founding spot →</a>
+      <a href="/app.html?plan=annual" class="price-cta" style="background:var(--gold);color:#0c0c0a;border-color:var(--gold);" onclick="trackEvent('pricing_annual_click')">Start 7-day free trial →</a>
     </div>
   </div>
-  <p class="founding-note">⚡ <strong>3 of 5 founding advisor spots remaining.</strong> Lock in your rate forever before they're gone.</p>
+  <p class="founding-note">⚡ <strong>Founders pricing — rate locked forever.</strong> Price increases once we hit 10 advisors.</p>
 </section>
 
 <!-- TESTIMONIALS -->
