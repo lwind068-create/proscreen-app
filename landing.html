@@ -253,11 +253,25 @@ footer{border-top:1px solid var(--border);padding:40px;display:flex;justify-cont
 
 <!-- DEMO PREVIEW -->
 <section style="padding-top:80px;" class="fade-up">
-  <div style="text-align:center;margin-bottom:0;">
+  <div style="text-align:center;margin-bottom:40px;">
     <div class="section-label">Live product</div>
     <h2 class="section-title">See it in action</h2>
     <p class="section-sub" style="margin:0 auto;">Real data. Real AI. Replace your current workflow in minutes.</p>
   </div>
+
+  <!-- VIDEO PLACEHOLDER — replace the div below with your Loom embed -->
+  <!-- To embed Loom: Share → Embed → copy the <iframe> tag and paste it here -->
+  <div id="demo-video" style="max-width:860px;margin:0 auto 40px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--bg2);aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;cursor:pointer;" onclick="trackEvent('video_placeholder_click')">
+    <div style="width:64px;height:64px;border-radius:50%;background:var(--gold-bg);border:1px solid rgba(201,168,76,0.3);display:flex;align-items:center;justify-content:center;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="var(--gold)"><polygon points="5,3 19,12 5,21"/></svg>
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;">Watch the 2-minute demo</div>
+      <div style="font-size:12px;color:var(--text3);">See the full AI workflow — screener, analysis, client reports</div>
+    </div>
+  </div>
+  <!-- END VIDEO PLACEHOLDER -->
+
   <div class="demo-wrap">
     <div class="demo-bar">
       <div class="demo-dot" style="background:#ff5f57"></div>
