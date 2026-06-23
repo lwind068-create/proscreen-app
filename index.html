@@ -1732,7 +1732,12 @@ async function runAlertCheck(){
         showToast(`🔔 Alert: ${alert.ticker}`,`${alert.ticker} ${conditionLabel(alert.condition,alert.value)}<br/>Now: <strong>$${stock.price.toFixed(2)}</strong>`,'triggered',0);
       }
       if(alert.methods.includes('email')&&alert.email){
-        fetch(`${API_BASE}/api/alert-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:alert.email,ticker:alert.ticker,condition:conditionLabel(alert.condition,alert.value),price:stock.price.toFixed(2)})}).catch(e=>console.error('Email alert failed:',e));
+        console.log('Sending alert email to',alert.email,'for',alert.ticker);
+        fetch(`${API_BASE}/api/alert-email`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to:alert.email,ticker:alert.ticker,condition:conditionLabel(alert.condition,alert.value),price:stock.price.toFixed(2)})})
+          .then(r=>r.json().then(d=>console.log('Alert email result:',r.status,d)))
+          .catch(e=>console.error('Email alert failed:',e));
+      } else {
+        console.log('No email for alert:',alert.ticker,'methods:',alert.methods,'email:',alert.email);
       }
       clearInterval(alertIntervals[alert.id]);delete alertIntervals[alert.id];
       saveUserData();
