@@ -1015,7 +1015,7 @@ const ALL_STOCKS=[
   {ticker:'PFE',name:'Pfizer Inc.',sector:'Healthcare',mcapVal:141,price:25.12,change:-0.88,pe:8.9,divYield:6.6,volumeM:22.1,beta:0.6,momentum:0.33,eps:1.40,profitMargin:4.5,roe:5.1,debtEq:0.6,revGrowth:-41.6,week52High:31.84,week52Low:25.20},
 ];
 const NEWS_DB={AAPL:[{h:"Apple unveils new AI features expected to boost upgrade cycle",s:"Bloomberg",t:"2h ago",p:true},{h:"Apple Services revenue hits record as App Store spending rebounds",s:"Reuters",t:"5h ago",p:true},{h:"Apple faces EU antitrust probe over App Store payment rules",s:"FT",t:"2d ago",p:false}],MSFT:[{h:"Microsoft Azure growth accelerates on AI infrastructure demand",s:"Bloomberg",t:"3h ago",p:true},{h:"Microsoft raises dividend, announces $60B buyback",s:"Reuters",t:"6h ago",p:true}],NVDA:[{h:"NVIDIA Blackwell chips see record demand from hyperscalers",s:"Bloomberg",t:"1h ago",p:true},{h:"Export restrictions threaten NVIDIA China revenue outlook",s:"FT",t:"1d ago",p:false}],TSLA:[{h:"Tesla deliveries miss estimates for second consecutive quarter",s:"Reuters",t:"2h ago",p:false},{h:"Musk signals FSD growth could offset delivery slowdown",s:"WSJ",t:"1d ago",p:true}],META:[{h:"Meta AI assistant reaches 500M users",s:"Bloomberg",t:"2h ago",p:true},{h:"Meta raises ad revenue guidance on strong engagement",s:"Reuters",t:"7h ago",p:true}],DEFAULT:[{h:"Markets rally on strong economic data and Fed signals",s:"Bloomberg",t:"1h ago",p:true},{h:"Earnings season beats expectations broadly across S&P 500",s:"WSJ",t:"1d ago",p:true}]};
-const stockNotes = {};
+const stockNotes = JSON.parse(localStorage.getItem('ps_stock_notes') || '{}');
 
 // ═══════════════════════════════════════════════════
 // STATE
@@ -1199,6 +1199,7 @@ function addNote(ticker){
   const note=prompt(`Note for ${ticker}:`,existing);
   if(note===null)return;
   if(note.trim()){stockNotes[ticker]=note.trim();}else{delete stockNotes[ticker];}
+  localStorage.setItem('ps_stock_notes', JSON.stringify(stockNotes));
   renderTable();
 }
 
