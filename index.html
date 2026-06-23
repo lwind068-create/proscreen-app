@@ -64,7 +64,7 @@ button.primary{background:var(--gold);color:#0f0f0d;border-color:var(--gold);fon
 button.primary:hover{opacity:.9;}
 select,input[type=text],input[type=number],input[type=email],input[type=tel],input[type=password]{font-family:var(--font);font-size:12px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);color:var(--text);width:100%;outline:none;transition:border-color .15s;}
 select:focus,input:focus{border-color:var(--gold);}
-input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px var(--bg3) inset;-webkit-text-fill-color:var(--text);transition:background-color 5000s ease-in-out 0s;}
+input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #1e1e1b inset;-webkit-text-fill-color:#e8e6df;transition:background-color 5000s ease-in-out 0s;}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px;}
 .card-title{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px;font-weight:500;}
 .tag{font-size:10px;padding:2px 7px;border-radius:99px;display:inline-block;}
@@ -318,7 +318,7 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
       <input id="auth-email" type="email" placeholder="Email address" style="font-size:13px;padding:10px 12px;border-radius:var(--r);"/>
       <div style="position:relative;width:100%;">
         <input id="auth-password" type="password" placeholder="Password" style="font-size:13px;padding:10px 40px 10px 12px;border-radius:var(--r);width:100%;"/>
-        <span onclick="const i=document.getElementById('auth-password');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈';" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;user-select:none;">👁</span>
+        <span id="pw-toggle" onclick="const i=document.getElementById('auth-password'),s=document.getElementById('pw-toggle');i.type=i.type==='password'?'text':'password';s.innerHTML=i.type==='password'?`<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6966' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z'/><circle cx='12' cy='12' r='3'/></svg>`:`<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b6966' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24'/><line x1='1' y1='1' x2='23' y2='23'/></svg>`;" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;user-select:none;display:flex;align-items:center;opacity:.6;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b6966" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
       </div>
       <div id="auth-confirm-wrap" style="display:none;">
         <input id="auth-confirm" type="password" placeholder="Confirm password" style="width:100%;font-size:13px;padding:10px 12px;border-radius:var(--r);"/>
