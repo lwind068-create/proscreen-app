@@ -339,25 +339,47 @@ mark.hl{background:#3a3000;color:var(--gold);border-radius:2px;}
 </div>
 
 <!-- PAYWALL MODAL -->
-<div id="paywall-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);align-items:center;justify-content:center;">
-  <div style="max-width:460px;width:100%;padding:0 24px;text-align:center;">
-    <div style="font-family:var(--font-display);font-size:38px;color:var(--text);margin-bottom:8px;">ProScreen</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:32px;">Professional Edition · For Financial Advisors</div>
+<div id="paywall-overlay" style="display:none;position:fixed;inset:0;z-index:99998;background:var(--bg);align-items:center;justify-content:center;overflow-y:auto;">
+  <div style="max-width:520px;width:100%;padding:40px 24px;text-align:center;">
+    <div style="font-family:var(--font-display);font-size:38px;color:var(--text);margin-bottom:6px;">ProScreen</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:28px;">Professional Edition · For Financial Advisors</div>
 
-    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px 32px;margin-bottom:20px;">
-      <div style="font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Monthly Subscription</div>
-      <div style="font-size:48px;font-weight:700;color:var(--text);line-height:1;" id="paywall-price">$49</div>
-      <div style="font-size:12px;color:var(--text3);margin-bottom:24px;">per month · cancel anytime</div>
-      <div style="text-align:left;display:flex;flex-direction:column;gap:10px;margin-bottom:24px;font-size:13px;color:var(--text2);">
-        <div>✓ Live stock screener with AI analysis</div>
-        <div>✓ Unlimited client portfolios</div>
-        <div>✓ Price alerts with email notifications</div>
-        <div>✓ Beat the Market strategy comparison</div>
-        <div>✓ AI chat assistant</div>
-        <div>✓ Market heatmap &amp; watchlists</div>
+    <!-- Billing toggle -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;">
+      <span id="pw-monthly-lbl" style="font-size:13px;font-weight:600;color:var(--text);">Monthly</span>
+      <div onclick="togglePaywallBilling()" style="width:44px;height:24px;border-radius:99px;background:var(--border2);cursor:pointer;position:relative;transition:background .2s;" id="pw-billing-toggle">
+        <div id="pw-billing-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--gold);transition:transform .2s;"></div>
       </div>
-      <button id="subscribe-btn" onclick="startCheckout(_planFromUrl)" style="width:100%;padding:13px;font-size:14px;font-weight:700;background:var(--gold);color:#0f0f0d;border:none;border-radius:var(--r);cursor:pointer;">Subscribe Now</button>
+      <span id="pw-annual-lbl" style="font-size:13px;color:var(--text2);">Annual <span style="background:rgba(26,158,110,0.1);color:#1a9e6e;border-radius:99px;padding:2px 7px;font-size:10px;margin-left:3px;">Save $188</span></span>
     </div>
+
+    <!-- Pricing cards side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <!-- Monthly card -->
+      <div id="pw-monthly-card" style="background:var(--bg2);border:2px solid var(--gold);border-radius:var(--r2);padding:20px 16px;cursor:pointer;transition:border-color .2s;" onclick="selectPaywallPlan('monthly')">
+        <div style="font-size:10px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Monthly</div>
+        <div style="font-size:36px;font-weight:700;color:var(--text);line-height:1;">$49</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">per month</div>
+      </div>
+      <!-- Annual card -->
+      <div id="pw-annual-card" style="background:var(--bg2);border:2px solid var(--border2);border-radius:var(--r2);padding:20px 16px;cursor:pointer;transition:border-color .2s;position:relative;" onclick="selectPaywallPlan('annual')">
+        <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:#1a9e6e;color:#fff;font-size:9px;font-weight:700;padding:3px 10px;border-radius:0 0 6px 6px;letter-spacing:.05em;">BEST VALUE</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Annual</div>
+        <div style="font-size:36px;font-weight:700;color:var(--text);line-height:1;">$400</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px;">per year · $33/mo</div>
+      </div>
+    </div>
+
+    <div style="text-align:left;display:flex;flex-direction:column;gap:8px;margin-bottom:20px;font-size:13px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;">
+      <div>✓ Live stock screener with AI analysis</div>
+      <div>✓ Unlimited client portfolios &amp; PDF reports</div>
+      <div>✓ Price alerts with email notifications</div>
+      <div>✓ Beat the Market strategy comparison</div>
+      <div>✓ AI chat assistant &amp; market heatmap</div>
+    </div>
+
+    <button id="subscribe-btn" onclick="startCheckout(_selectedPlan)" style="width:100%;padding:14px;font-size:15px;font-weight:700;background:var(--gold);color:#0f0f0d;border:none;border-radius:var(--r);cursor:pointer;margin-bottom:10px;">Start 7-day free trial →</button>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:16px;">Card required · no charge for 7 days · cancel anytime</div>
     <button onclick="signOut()" style="font-size:12px;color:var(--text3);background:none;border:none;cursor:pointer;">Sign out</button>
   </div>
 </div>
@@ -2677,6 +2699,8 @@ function _applySession(session) {
       const paywall = document.getElementById('paywall-overlay');
       if (!active) {
         paywall.style.display = 'flex';
+        selectPaywallPlan(_planFromUrl);
+        if (_planFromUrl === 'annual') togglePaywallBilling();
         _pollSubscription();
       } else {
         paywall.style.display = 'none';
@@ -2724,6 +2748,29 @@ _sb.auth.onAuthStateChange(async (event, session) => {
 // After Stripe checkout redirect, re-check subscription once auth is confirmed
 const _stripeReturn = new URLSearchParams(window.location.search).get('subscribed') === 'true';
 const _planFromUrl  = new URLSearchParams(window.location.search).get('plan') || 'monthly';
+let _selectedPlan   = _planFromUrl;
+
+function selectPaywallPlan(plan) {
+  _selectedPlan = plan;
+  const monthlyCard = document.getElementById('pw-monthly-card');
+  const annualCard  = document.getElementById('pw-annual-card');
+  if (!monthlyCard) return;
+  monthlyCard.style.borderColor = plan === 'monthly' ? 'var(--gold)' : 'var(--border2)';
+  annualCard.style.borderColor  = plan === 'annual'  ? 'var(--gold)' : 'var(--border2)';
+}
+
+function togglePaywallBilling() {
+  const isAnnual = _selectedPlan === 'annual';
+  selectPaywallPlan(isAnnual ? 'monthly' : 'annual');
+  const knob = document.getElementById('pw-billing-knob');
+  const toggle = document.getElementById('pw-billing-toggle');
+  const mLbl = document.getElementById('pw-monthly-lbl');
+  const aLbl = document.getElementById('pw-annual-lbl');
+  if (knob) knob.style.transform = !isAnnual ? 'translateX(20px)' : 'translateX(0)';
+  if (toggle) toggle.style.background = !isAnnual ? 'var(--green)' : 'var(--border2)';
+  if (mLbl) mLbl.style.color = !isAnnual ? 'var(--text2)' : 'var(--text)';
+  if (aLbl) aLbl.style.color = !isAnnual ? 'var(--text)'  : 'var(--text2)';
+}
 if (_stripeReturn) history.replaceState({}, '', window.location.pathname);
 
 function _pollSubscription() {
