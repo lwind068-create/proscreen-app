@@ -2074,6 +2074,57 @@ const origShowTab = showTab;
 // ═══════════════════════════════════════════════════
 // BEAT THE MARKET
 // ═══════════════════════════════════════════════════
+
+const _btmHistCache = {};
+
+function _btmFromDate(period) {
+  const d = new Date();
+  if      (period === '1M')  d.setMonth(d.getMonth() - 1);
+  else if (period === '3M')  d.setMonth(d.getMonth() - 3);
+  else if (period === '6M')  d.setMonth(d.getMonth() - 6);
+  else if (period === '1Y')  d.setFullYear(d.getFullYear() - 1);
+  else if (period === 'YTD') { d.setMonth(0); d.setDate(1); }
+  return d.toISOString().split('T')[0];
+}
+
+async function fetchBtmHistory(ticker, period) {
+  const key = `${ticker}-${period}`;
+  if (_btmHistCache[key]) return _btmHistCache[key];
+  const from = _btmFromDate(period);
+  const to   = new Date().toISOString().split('T')[0];
+  try {
+    const r = await fetch(`${API_BASE}/api/history/${ticker}?from=${from}&to=${to}`);
+    const d = await r.json();
+    const prices = (d.prices || []).map(p => p.close);
+    if (prices.length < 2) return null;
+    _btmHistCache[key] = prices;
+    return prices;
+  } catch(e) { return null; }
+}
+
+function calcRealCumReturns(priceArrays) {
+  if (!priceArrays.length) return [];
+  const minLen = Math.min(...priceArrays.map(p => p.length));
+  if (minLen < 2) return [];
+  const result = [];
+  for (let i = 0; i < minLen; i++) {
+    const avg = priceArrays.reduce((s, p) => s + (p[i] - p[0]) / p[0] * 100, 0) / priceArrays.length;
+    result.push(Math.round(avg * 100) / 100);
+  }
+  return result;
+}
+
+function _btmSetLoading(on) {
+  const ctx = document.getElementById('btm-line-chart');
+  const wrap = ctx && ctx.parentElement;
+  let ldr = document.getElementById('btm-loader');
+  if (on) {
+    if (!ldr && wrap) { ldr = document.createElement('div'); ldr.id='btm-loader'; ldr.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg2);border-radius:var(--r2);font-size:12px;color:var(--text3);z-index:2;'; ldr.textContent='Loading real data...'; wrap.style.position='relative'; wrap.appendChild(ldr); }
+  } else {
+    if (ldr) ldr.remove();
+  }
+}
+
 const BTM_STRATEGIES = [
   { id:'dividend',  name:'High Dividend Income', desc:'Div. Yield ≥ 3%, P/E < 30',    color:'#1fad7a', filter: s => s.divYield >= 3 && (s.pe < 0 || s.pe < 30) },
   { id:'value',     name:'Deep Value',           desc:'P/E 0–15, positive EPS',       color:'#4a9eff', filter: s => s.pe > 0 && s.pe < 15 },
@@ -2307,21 +2358,34 @@ function renderBeatTheMarket() {
   }
 }
 
-function _btmRenderStrategies() {
+async function _btmRenderStrategies() {
   const s      = activeBtmStrat;
-  const pts    = btmPts();
   const stocks = ALL_STOCKS.filter(s.filter);
-  const N      = Math.min(60, pts+1);
+  const N      = 60;
 
-  const stratRaw   = calcCumReturns(stocks, pts);
-  const spyRaw     = calcCumReturns([SPY_PROXY], pts);
-  const stratFinal = stratRaw[stratRaw.length-1];
-  const spyFinal   = spyRaw[spyRaw.length-1];
+  _btmSetLoading(true);
+
+  // Fetch real histories for all strategy stocks + SPY in parallel
+  const tickers  = [...stocks.map(st => st.ticker), 'SPY'];
+  const histories = await Promise.all(tickers.map(t => fetchBtmHistory(t, activeBtmPeriod)));
+  const histMap   = Object.fromEntries(tickers.map((t, i) => [t, histories[i]]));
+
+  _btmSetLoading(false);
+
+  const stratArrays = stocks.map(st => histMap[st.ticker]).filter(Boolean);
+  const spyPrices   = histMap['SPY'];
+
+  const stratRaw   = stratArrays.length ? calcRealCumReturns(stratArrays) : calcCumReturns(stocks, btmPts());
+  const spyRaw     = spyPrices ? calcRealCumReturns([spyPrices]) : calcCumReturns([SPY_PROXY], btmPts());
+  const stratFinal = stratRaw[stratRaw.length-1] ?? 0;
+  const spyFinal   = spyRaw[spyRaw.length-1] ?? 0;
   const alpha      = stratFinal - spyFinal;
 
   const stockRets = stocks.map(st => {
-    const h = genHistory(st, pts);
-    return { ...st, ret: Math.round((h[h.length-1]-h[0])/h[0]*10000)/100 };
+    const h = histMap[st.ticker];
+    const ret = h ? Math.round((h[h.length-1]-h[0])/h[0]*10000)/100
+                  : Math.round((genHistory(st,btmPts()).slice(-1)[0]-genHistory(st,btmPts())[0])/genHistory(st,btmPts())[0]*10000)/100;
+    return { ...st, ret };
   });
   const winRate = stocks.length ? Math.round(stockRets.filter(st=>st.ret>spyFinal).length/stocks.length*100) : 0;
 
@@ -2370,19 +2434,44 @@ function _btmRenderStrategies() {
   }
 }
 
-function _btmRenderClients() {
-  const pts      = btmPts();
-  const N        = Math.min(60, pts+1);
-  const spyRaw   = calcCumReturns([SPY_PROXY], pts);
-  const spyFinal = spyRaw[spyRaw.length-1];
-  const labels   = btmLabels(pts, N);
-
+async function _btmRenderClients() {
+  const N          = 60;
   const selClients = activeBtmClients.map(id=>clients.find(c=>c.id===id)).filter(Boolean);
   const primary    = selClients[0];
 
+  _btmSetLoading(true);
+
+  // Gather all unique tickers needed
+  const allTickers = ['SPY', ...new Set(selClients.flatMap(c => c.holdings.map(h => h.ticker)))];
+  const histories  = await Promise.all(allTickers.map(t => fetchBtmHistory(t, activeBtmPeriod)));
+  const histMap    = Object.fromEntries(allTickers.map((t, i) => [t, histories[i]]));
+
+  _btmSetLoading(false);
+
+  const spyPrices = histMap['SPY'];
+  const spyRaw    = spyPrices ? calcRealCumReturns([spyPrices]) : calcCumReturns([SPY_PROXY], btmPts());
+  const spyFinal  = spyRaw[spyRaw.length-1] ?? 0;
+  const pts       = btmPts();
+  const labels    = btmLabels(pts, N);
+
+  function clientCumReturns(client) {
+    const valid = client.holdings.filter(h => histMap[h.ticker]);
+    if (!valid.length) return calcClientReturns(client, pts);
+    const totalVal = valid.reduce((sum,h) => sum + (ALL_STOCKS.find(s=>s.ticker===h.ticker)?.price||0)*h.shares, 0);
+    if (!totalVal) return calcClientReturns(client, pts);
+    const weighted = valid.map(h => ({
+      prices: histMap[h.ticker],
+      weight: (ALL_STOCKS.find(s=>s.ticker===h.ticker)?.price||0)*h.shares/totalVal
+    }));
+    const minLen = Math.min(...weighted.map(w => w.prices.length));
+    return Array.from({length:minLen}, (_,i) =>
+      Math.round(weighted.reduce((s,{prices,weight}) => s + (prices[i]-prices[0])/prices[0]*100*weight, 0)*100)/100
+    );
+  }
+
   const datasets = [
     ...selClients.map((c,i) => ({
-      label:c.name, data:btmDownsample(calcClientReturns(c,pts),N),
+      label:c.name, data:btmDownsample(clientCumReturns(c),N),
       color:BTM_CLIENT_COLORS[i], fill:i===0, dashed:false
     })),
     { label:'SPY', data:btmDownsample(spyRaw,N), color:'#5a5854', fill:false, dashed:true }
@@ -2406,15 +2495,17 @@ function _btmRenderClients() {
     return;
   }
 
-  const primRaw   = calcClientReturns(primary, pts);
-  const primFinal = primRaw[primRaw.length-1];
+  const primRaw   = clientCumReturns(primary);
+  const primFinal = primRaw[primRaw.length-1] ?? 0;
   const alpha     = primFinal - spyFinal;
 
   const holdingRets = primary.holdings.map(h => {
     const s = ALL_STOCKS.find(x => x.ticker === h.ticker);
     if (!s) return null;
-    const hist = genHistory(s, pts);
-    return { ...s, shares:h.shares, avgCost:h.avgCost, ret: Math.round((hist[hist.length-1]-hist[0])/hist[0]*10000)/100 };
+    const hp  = histMap[h.ticker];
+    const ret = hp ? Math.round((hp[hp.length-1]-hp[0])/hp[0]*10000)/100
+                   : Math.round((genHistory(s,pts).slice(-1)[0]-genHistory(s,pts)[0])/genHistory(s,pts)[0]*10000)/100;
+    return { ...s, shares:h.shares, avgCost:h.avgCost, ret };
   }).filter(Boolean);
   const winRate = holdingRets.length ? Math.round(holdingRets.filter(h=>h.ret>spyFinal).length/holdingRets.length*100) : 0;
 
