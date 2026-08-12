@@ -108,6 +108,45 @@
     text-transform:uppercase;color:var(--gray-500);white-space:nowrap;
   }
 
+  /* UPDATE PANEL */
+  .update-panel{max-width:720px;margin:28px auto 0;}
+  .update-toggle{
+    display:block;margin:0 auto;background:transparent;border:1px solid rgba(255,255,255,0.14);
+    color:var(--gray-300);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+    padding:10px 20px;border-radius:100px;cursor:pointer;transition:all .15s ease;
+  }
+  .update-toggle:hover{border-color:rgba(255,255,255,0.3);color:var(--white);}
+  .update-form{
+    margin-top:18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);
+    border-radius:16px;padding:24px;
+  }
+  .update-hint{font-size:12.5px;color:var(--gray-500);margin-bottom:18px;line-height:1.6;}
+  .update-hint code{background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;}
+  .update-row{
+    display:grid;grid-template-columns:90px 1fr 1fr;gap:10px;align-items:center;margin-bottom:10px;
+  }
+  .update-row label{font-size:13px;font-weight:600;}
+  .update-row input{
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);
+    border-radius:8px;padding:8px 10px;color:var(--white);font-family:'IBM Plex Mono',monospace;
+    font-size:13px;width:100%;
+  }
+  .update-row input:focus{outline:none;border-color:var(--accent);}
+  .field-hint{font-size:10px;color:var(--gray-500);margin-top:-6px;margin-bottom:14px;display:flex;justify-content:space-between;padding:0 0 0 100px;}
+  .generate-btn,.copy-btn{
+    width:100%;margin-top:14px;padding:12px 0;background:var(--accent);color:white;
+    border:none;border-radius:10px;font-family:'Inter',sans-serif;font-weight:600;
+    font-size:14px;cursor:pointer;transition:background .15s ease;
+  }
+  .generate-btn:hover,.copy-btn:hover{background:var(--accent-light);}
+  .copy-btn{background:rgba(74,222,128,0.15);color:#4ADE80;border:1px solid rgba(74,222,128,0.4);}
+  .copy-btn:hover{background:rgba(74,222,128,0.25);}
+  .code-output{
+    width:100%;min-height:150px;margin-top:14px;background:#0A1420;border:1px solid rgba(255,255,255,0.12);
+    border-radius:10px;padding:14px;color:#4ADE80;font-family:'IBM Plex Mono',monospace;font-size:12px;
+    line-height:1.6;resize:vertical;
+  }
+
   /* PODIUM */
   .podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:20px;align-items:end;}
   @media(max-width:760px){.podium{grid-template-columns:1fr;}}
@@ -225,6 +264,17 @@
   </div>
 
   <div class="foot-note">Sample numbers shown below — swap in real totals each week.</div>
+
+  <div class="update-panel">
+    <button class="update-toggle" id="updateToggle">✎ Update This Week's Numbers</button>
+    <div class="update-form" id="updateForm" style="display:none;">
+      <p class="update-hint">Enter this week's real numbers below, then click Generate — copy the code it produces and paste it into the <code>REPS_FALLBACK</code> section of this file, then push to GitHub.</p>
+      <div class="update-rows" id="updateRows"></div>
+      <button class="generate-btn" id="generateBtn">Generate Code</button>
+      <textarea class="code-output" id="codeOutput" readonly placeholder="Your updated code will appear here..."></textarea>
+      <button class="copy-btn" id="copyBtn" style="display:none;">Copy to Clipboard</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -296,6 +346,7 @@ async function loadData() {
 const TEAM_BOOST_PCT = 5;
 const INDIVIDUAL_MONEY_BOOST_PCT = 10;
 const INDIVIDUAL_QTY_BOOST_PCT = 10;
+const POINTS_PER_DOLLAR_THRESHOLD = 750; // every $750 in sales = 1 point
 
 const TEAM_NAMES = { 1: "Team Luke", 2: "Team Matthew" };
 const TEAM_MEMBERS = { 1: "Luke, Jacob, Sam", 2: "Matthew, Gavin, Ethan" };
@@ -330,22 +381,22 @@ function renderTeams() {
   const sumSales = (arr) => arr.reduce((s, r) => s + r.sales, 0);
   const sumDeals = (arr) => arr.reduce((s, r) => s + r.deals, 0);
 
+  // Scoring: every $750 in sales = 1 point, every deal closed = 1 point.
+  // Team with the most combined points wins the weekly 5% team boost.
+  const teamPoints = (arr) =>
+    arr.reduce((pts, r) => pts + Math.floor(r.sales / POINTS_PER_DOLLAR_THRESHOLD) + r.deals, 0);
+
   const teams = [
-    { id: 1, sales: sumSales(t1), deals: sumDeals(t1), points: 0 },
-    { id: 2, sales: sumSales(t2), deals: sumDeals(t2), points: 0 },
+    { id: 1, sales: sumSales(t1), deals: sumDeals(t1), points: teamPoints(t1) },
+    { id: 2, sales: sumSales(t2), deals: sumDeals(t2), points: teamPoints(t2) },
   ];
 
-  // Points: 1 for leading sales $, 1 for leading deal count.
-  // A 1-1 split is broken by whichever team has more total sales $.
   const [a, b] = teams;
-  if (a.sales > b.sales) a.points++; else if (b.sales > a.sales) b.points++;
-  if (a.deals > b.deals) a.points++; else if (b.deals > a.deals) b.points++;
-
   let winnerId;
   if (a.points !== b.points) {
     winnerId = a.points > b.points ? a.id : b.id;
   } else {
-    // tie on points — sales $ decides
+    // true tie on points — sales $ decides
     winnerId = a.sales >= b.sales ? a.id : b.id;
   }
 
@@ -364,6 +415,7 @@ function renderTeams() {
       <div class="team-stats">
         <div><div class="team-stat-num">${fmt(t.sales)}</div><div class="team-stat-label">Total Sales</div></div>
         <div><div class="team-stat-num">${t.deals}</div><div class="team-stat-label">Deals Closed</div></div>
+        <div><div class="team-stat-num">${t.points}</div><div class="team-stat-label">Points</div></div>
       </div>
     `;
     container.appendChild(card);
@@ -437,6 +489,54 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
 
 renderTeams();
 loadData();
+
+/* -------- Update panel: generate ready-to-paste code -------- */
+const updateToggle = document.getElementById("updateToggle");
+const updateForm = document.getElementById("updateForm");
+updateToggle.addEventListener("click", () => {
+  const showing = updateForm.style.display !== "none";
+  updateForm.style.display = showing ? "none" : "block";
+  updateToggle.textContent = showing ? "✎ Update This Week's Numbers" : "✕ Close";
+});
+
+function buildUpdateRows() {
+  const container = document.getElementById("updateRows");
+  container.innerHTML = `<div class="field-hint"><span>Sales $</span><span>Deals</span></div>`;
+  REPS_FALLBACK.forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "update-row";
+    row.innerHTML = `
+      <label>${r.name}</label>
+      <input type="number" id="in-sales-${r.name}" value="${r.sales}" min="0">
+      <input type="number" id="in-deals-${r.name}" value="${r.deals}" min="0">
+    `;
+    container.appendChild(row);
+  });
+}
+buildUpdateRows();
+
+document.getElementById("generateBtn").addEventListener("click", () => {
+  const lines = REPS_FALLBACK.map((r) => {
+    const sales = Number(document.getElementById(`in-sales-${r.name}`).value) || 0;
+    const deals = Number(document.getElementById(`in-deals-${r.name}`).value) || 0;
+    const commission = Math.round(sales * 0.25 * 100) / 100; // rough estimate, adjust for 30% tier by hand if needed
+    return `  { name: "${r.name}", vertical: "${r.vertical}", sales: ${sales}, deals: ${deals}, commission: ${commission}, team: ${r.team} },`;
+  });
+  const code = `const REPS_FALLBACK = [\n${lines.join("\n")}\n];`;
+  document.getElementById("codeOutput").value = code;
+  document.getElementById("copyBtn").style.display = "block";
+});
+
+document.getElementById("copyBtn").addEventListener("click", () => {
+  const output = document.getElementById("codeOutput");
+  output.select();
+  navigator.clipboard.writeText(output.value).then(() => {
+    const btn = document.getElementById("copyBtn");
+    const original = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => (btn.textContent = original), 1500);
+  });
+});
 </script>
 
 </body>
