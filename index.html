@@ -294,14 +294,13 @@
 const SHEET_CSV_URL = ""; // paste a published Google Sheet CSV link here to go live
 
 const REPS_FALLBACK = [
-  { name: "Luke",    vertical: "Realtors + Automation", sales: 67000, deals: 67, commission: 0,     team: 1 },
-  { name: "Jacob",   vertical: "Websites & Chatbots",    sales: 0, deals: 0, commission: 0,   team: 1 },
-  { name: "Sam",     vertical: "Insurance Agents",       sales: 0,  deals: 0, commission: 0,   team: 1 },
-  { name: "Matthew", vertical: "Ads",                    sales: 0, deals: 0, commission: 0,   team: 2 },
-  { name: "Gavin",   vertical: "Home Services",          sales: 0, deals: 0, commission: 0,   team: 2 },
-  { name: "Ethan",   vertical: "Medical / Dental",       sales: 0,  deals: 0, commission: 0, team: 2 },
+  { name: "Luke", vertical: "Realtors + Automation", sales: 0, deals: 0, commission: 0, team: 1 },
+  { name: "Jacob", vertical: "Websites & Chatbots", sales: 0, deals: 0, commission: 0, team: 1 },
+  { name: "Sam", vertical: "Insurance Agents", sales: 0, deals: 0, commission: 0, team: 1 },
+  { name: "Matthew", vertical: "Ads", sales: 0, deals: 0, commission: 0, team: 2 },
+  { name: "Gavin", vertical: "Home Services", sales: 0, deals: 0, commission: 0, team: 2 },
+  { name: "Ethan", vertical: "Medical / Dental", sales: 0, deals: 0, commission: 0, team: 2 },
 ];
-
 let REPS = REPS_FALLBACK;
 
 function parseCSV(text) {
